@@ -3,9 +3,17 @@ project(Aquilon CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_subdirectory(libs/SDL)
+include(FetchContent)
+
+FetchContent_Declare(
+    SDL
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+    GIT_TAG release-3.0.0
+)
+
+FetchContent_MakeAvailable(SDL)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-add_executable(Aquilon ${SOURCES})
 
+add_executable(Aquilon ${SOURCES})
 target_link_libraries(Aquilon PRIVATE SDL3::SDL3)
