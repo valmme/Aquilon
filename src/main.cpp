@@ -34,6 +34,7 @@ int main() {
     Uint64 last_counter = SDL_GetPerformanceCounter();
     Uint64 frequency = SDL_GetPerformanceFrequency();
     float delta_time = 0.0f;
+    float fps = 0.0f;
 
     bool running = true;
     SDL_Event e;
@@ -42,7 +43,11 @@ int main() {
         Uint64 current_counter = SDL_GetPerformanceCounter();
         delta_time = (float)(current_counter - last_counter) / frequency;
         last_counter = current_counter;
+        fps = 1.0f / delta_time;
 
+        char title[128];
+        snprintf(title, sizeof(title), "Aquilon - FPS: %.1f", fps);
+        SDL_SetWindowTitle(window, title);
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_EVENT_QUIT)
                 running = false;
