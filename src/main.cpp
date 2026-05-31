@@ -23,6 +23,8 @@ int main() {
         return 1;
     }
 
+    SDL_SetRenderVSync(renderer, 1);
+
     Textures tex = load_textures(renderer);
 
     World world;
@@ -49,14 +51,14 @@ int main() {
         }
 
         player.update(delta_time);
-        
+
         int player_tile_x = (int)player.player.x / TILE_SIZE;
         int player_tile_y = (int)player.player.y / TILE_SIZE;
 
         world.update(player_tile_x, player_tile_y);
         cam.update(player.player);
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 50, 130, 230, 255);
         SDL_RenderClear(renderer);
 
         for (auto& [key, chunk] : world.get_chunks()) {
