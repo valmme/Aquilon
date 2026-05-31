@@ -2,7 +2,7 @@
 
 Player::Player() {
     player = { 400, 300, 32, 32 };
-    speed = 200.0f;
+    speed = 250.0f;
 
     up = down = left = right = false;
 
@@ -53,7 +53,14 @@ void Player::update_animation(float delta_time) {
 }
 
 
-void Player::render(SDL_Renderer* renderer) {
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderFillRect(renderer, &player);
+void Player::render(SDL_Renderer* renderer, const Camera& cam) {
+    SDL_FRect screen_rect = {
+        player.x - cam.x,
+        player.y - cam.y,
+        player.w,
+        player.h
+    };
+
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &screen_rect);
 }
