@@ -1,4 +1,4 @@
-#include "include/player.h"
+#include "player.h"
 
 Player::Player() {
     player = { 400, 300, 32, 32 };
@@ -32,7 +32,7 @@ void Player::update(float delta_time) {
     if (down)  player.y += speed * delta_time;
     if (left)  player.x -= speed * delta_time;
     if (right) player.x += speed * delta_time;
-    
+
     update_animation(delta_time);
 }
 

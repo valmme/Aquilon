@@ -55,7 +55,6 @@ int main() {
         player.render(renderer);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(1);
     }
 
     SDL_DestroyRenderer(renderer);
