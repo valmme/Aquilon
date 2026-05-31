@@ -1,6 +1,6 @@
 #pragma once
 #include "SDL3/SDL.h"
-#include "math.h"
+#include "vmath.h"
 
 class Player {
 public:
