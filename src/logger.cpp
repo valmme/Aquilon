@@ -48,6 +48,7 @@ const char* ConsoleColorPrefix(Logger::Level level) {
 
 std::ofstream Logger::log_file_;
 bool Logger::console_output_ = true;
+Logger::Level Logger::min_level_ = Logger::Level::Trace;
 std::mutex Logger::mutex_;
 
 void Logger::SetLogFile(const std::string& path) {
@@ -61,6 +62,11 @@ void Logger::SetLogFile(const std::string& path) {
 void Logger::SetConsoleOutput(bool enabled) {
     std::lock_guard<std::mutex> lock(mutex_);
     console_output_ = enabled;
+}
+
+void Logger::SetLogLevel(Level level) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    min_level_ = level;
 }
 
 const char* Logger::LevelToString(Level level) {
@@ -95,6 +101,10 @@ std::string Logger::FormatTime() {
 
 void Logger::Log(const char* type, Level level, const char* format, ...) {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (static_cast<int>(level) < static_cast<int>(min_level_)) {
+        return;
+    }
+
     std::string time = FormatTime();
 
     char message[1024];

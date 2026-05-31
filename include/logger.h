@@ -21,6 +21,7 @@ public:
 
     static void SetLogFile(const std::string& path);
     static void SetConsoleOutput(bool enabled);
+    static void SetLogLevel(Level level);
     static void Log(const char* type, Level level, const char* format, ...);
 
 private:
@@ -29,6 +30,7 @@ private:
 
     static std::ofstream log_file_;
     static bool console_output_;
+    static Level min_level_;
     static std::mutex mutex_;
 };
 

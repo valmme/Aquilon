@@ -1,0 +1,6 @@
+#ifndef AQUILON_VERSION_H
+#define AQUILON_VERSION_H
+
+#define AQUILON_VERSION "0.1.0"
+
+#endif // AQUILON_VERSION_H

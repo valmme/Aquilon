@@ -1,4 +1,6 @@
 #include "gen/world.h"
+#include <cmath>
+#include <cstdlib>
 #include <cstdio>
 
 #define STB_PERLIN_IMPLEMENTATION
@@ -74,13 +76,22 @@ void World::set_tile(vec2 position, const Tile& tile) {
     set_tile(position.x, position.y, tile);
 }
 
-void World::update(int player_x, int player_y) {
+void World::update(int player_x, int player_y, int load_radius) {
     int pcx = (int)std::floor((float)player_x / CHUNK_SIZE);
     int pcy = (int)std::floor((float)player_y / CHUNK_SIZE);
 
-    for (int dy = -2; dy <= 2; dy++) {
-        for (int dx = -2; dx <= 2; dx++) {
+    for (int dy = -load_radius; dy <= load_radius; dy++) {
+        for (int dx = -load_radius; dx <= load_radius; dx++) {
             get_or_create_chunk(pcx + dx, pcy + dy);
+        }
+    }
+
+    for (auto it = chunks.begin(); it != chunks.end(); ) {
+        const ChunkKey& key = it->first;
+        if (std::abs(key.x - pcx) > load_radius || std::abs(key.y - pcy) > load_radius) {
+            it = chunks.erase(it);
+        } else {
+            ++it;
         }
     }
 }

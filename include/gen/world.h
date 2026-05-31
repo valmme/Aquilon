@@ -36,7 +36,7 @@ public:
     void set_tile(int x, int y, const Tile& tile);
     void set_tile(vec2 position, const Tile& tile);
 
-    void update(int player_x, int player_y);
+    void update(int player_x, int player_y, int load_radius = 2);
 
     const std::unordered_map<ChunkKey, Chunk, ChunkKeyHash>& get_chunks() const { return chunks; }
 
