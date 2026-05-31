@@ -16,7 +16,7 @@ Textures load_textures(SDL_Renderer* renderer) {
     t.ice  = find_texture(renderer, t.none, "resources/textures/ice.png");
     t.snow = find_texture(renderer, t.none, "resources/textures/snow.png");
     t.rock = find_texture(renderer, t.none, "resources/textures/rock.png");
-    t.ore  = find_texture(renderer, t.none, "resources/textures/ore.png");
+    t.ore  = find_texture(renderer, t.none, "resources/textures/rock.png");
 
     return t;
 }

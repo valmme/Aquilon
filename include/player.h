@@ -6,22 +6,52 @@ struct Camera {
     float x = 0;
     float y = 0;
 
+    float zoom = 1.0f;
+
     float deadzone_w = 120.0f;
     float deadzone_h = 90.0f;
+    
+    float follow_lerp_moving = 0.08f;
+    float follow_lerp_stopped = 0.22f;
+    float last_player_cx = 0.0f;
+    float last_player_cy = 0.0f;
 
-    void update(SDL_FRect player) {
-        float screen_px = player.x + player.w * 0.5f - x;
-        float screen_py = player.y + player.h * 0.5f - y;
+    void update(SDL_FRect player, float screen_cx, float screen_cy) {
+        float player_cx = player.x + player.w * 0.5f;
+        float player_cy = player.y + player.h * 0.5f;
 
-        float box_left   = 400.0f - deadzone_w * 0.5f;
-        float box_right  = 400.0f + deadzone_w * 0.5f;
-        float box_top    = 300.0f - deadzone_h * 0.5f;
-        float box_bottom = 300.0f + deadzone_h * 0.5f;
+        float desired_x = player_cx - (screen_cx) / zoom;
+        float desired_y = player_cy - (screen_cy) / zoom;
 
-        if (screen_px < box_left)   x -= (box_left   - screen_px);
-        if (screen_px > box_right)  x += (screen_px  - box_right);
-        if (screen_py < box_top)    y -= (box_top     - screen_py);
-        if (screen_py > box_bottom) y += (screen_py   - box_bottom);
+        float dx = player_cx - last_player_cx;
+        float dy = player_cy - last_player_cy;
+        float move_sq = dx*dx + dy*dy;
+        bool moving = move_sq > 1e-4f;
+
+        float lerp = moving ? follow_lerp_moving : follow_lerp_stopped;
+
+        x += (desired_x - x) * lerp;
+        y += (desired_y - y) * lerp;
+
+        last_player_cx = player_cx;
+        last_player_cy = player_cy;
+    }
+
+    SDL_FPoint WorldToScreen(float world_x, float world_y) const {
+        SDL_FPoint p;
+        p.x = (world_x - x) * zoom;
+        p.y = (world_y - y) * zoom;
+        return p;
+    }
+
+    SDL_FRect WorldToScreenRect(float world_x, float world_y, float w, float h) const {
+        SDL_FPoint p = WorldToScreen(world_x, world_y);
+        SDL_FRect r;
+        r.x = p.x;
+        r.y = p.y;
+        r.w = w * zoom;
+        r.h = h * zoom;
+        return r;
     }
 };
 

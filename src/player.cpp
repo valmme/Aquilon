@@ -17,6 +17,11 @@ void Player::handle_input(const SDL_Event& e) {
         if (e.key.key == SDLK_S) down = true;
         if (e.key.key == SDLK_A) left = true;
         if (e.key.key == SDLK_D) right = true;
+        
+        if (e.key.key == SDLK_UP)    up = true;
+        if (e.key.key == SDLK_DOWN)  down = true;
+        if (e.key.key == SDLK_LEFT)  left = true;
+        if (e.key.key == SDLK_RIGHT) right = true;
     }
 
     if (e.type == SDL_EVENT_KEY_UP) {
@@ -24,6 +29,11 @@ void Player::handle_input(const SDL_Event& e) {
         if (e.key.key == SDLK_S) down = false;
         if (e.key.key == SDLK_A) left = false;
         if (e.key.key == SDLK_D) right = false;
+
+        if (e.key.key == SDLK_UP)    up = false;
+        if (e.key.key == SDLK_DOWN)  down = false;
+        if (e.key.key == SDLK_LEFT)  left = false;
+        if (e.key.key == SDLK_RIGHT) right = false;
     }
 }
 
@@ -54,12 +64,7 @@ void Player::update_animation(float delta_time) {
 
 
 void Player::render(SDL_Renderer* renderer, const Camera& cam) {
-    SDL_FRect screen_rect = {
-        player.x - cam.x,
-        player.y - cam.y,
-        player.w,
-        player.h
-    };
+    SDL_FRect screen_rect = cam.WorldToScreenRect(player.x, player.y, player.w, player.h);
 
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderFillRect(renderer, &screen_rect);
