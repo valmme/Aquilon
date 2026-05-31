@@ -1,7 +1,7 @@
 #include "player.h"
 
 Player::Player() {
-    player = { 400, 300, 32, 32 };
+    player = { 0.0f, 0.0f, 32, 32 };
     speed = 250.0f;
 
     up = down = left = right = false;

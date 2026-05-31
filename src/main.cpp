@@ -6,8 +6,6 @@
 #include "gen/world.h"
 
 const int TILE_SIZE = 32;
-const int MAP_W = 32;
-const int MAP_H = 32;
 
 int main() {
     if (!SDL_Init(SDL_INIT_VIDEO)) return 1;
@@ -51,7 +49,11 @@ int main() {
         }
 
         player.update(delta_time);
-        world.update((int)player.player.x, (int)player.player.y);
+        
+        int player_tile_x = (int)player.player.x / TILE_SIZE;
+        int player_tile_y = (int)player.player.y / TILE_SIZE;
+
+        world.update(player_tile_x, player_tile_y);
         cam.update(player.player);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
