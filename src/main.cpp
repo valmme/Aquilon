@@ -2,7 +2,7 @@
 
 int main() {
     SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Aquilon", 800, 600, 1);
+    SDL_Window* window = SDL_CreateWindow("Aquilon", 800, 600, 0);
 
     SDL_Event e;
     bool running = true;
