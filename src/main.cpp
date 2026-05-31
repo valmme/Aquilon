@@ -1,33 +1,112 @@
 #include <SDL3/SDL.h>
 #include <SDL3_image/SDL_image.h>
 #include <cstdio>
+#include <cstring>
 #include "player.h"
 #include "textures.h"
 #include "gui.h"
 #include "gen/world.h"
+#include "logger.h"
 
 const int TILE_SIZE = 32;
 
-int main() {
-    if (!SDL_Init(SDL_INIT_VIDEO)) return 1;
+static const char* ParseRendererBackend(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        const char* arg = argv[i];
+        if (!arg) {
+            continue;
+        }
 
-    SDL_Window* window = SDL_CreateWindow("Aquilon", 800, 600, 0);
-    if (!window) {
-        SDL_Quit();
+        if (std::strcmp(arg, "-vulkan") == 0) return "vulkan";
+        if (std::strcmp(arg, "-opengl") == 0) return "opengl";
+        if (std::strcmp(arg, "-d3d11") == 0) return "direct3d11";
+        if (std::strcmp(arg, "-d3d12") == 0) return "direct3d12";
+        if (std::strcmp(arg, "-software") == 0) return "software";
+        if (std::strcmp(arg, "-gpu") == 0) return "gpu";
+        if (std::strcmp(arg, "-metal") == 0) return "metal";
+
+        if (std::strncmp(arg, "-renderer=", 10) == 0) return arg + 10;
+        if (std::strncmp(arg, "--renderer=", 11) == 0) return arg + 11;
+
+        if (std::strcmp(arg, "-renderer") == 0 || std::strcmp(arg, "--renderer") == 0) {
+            if (i + 1 < argc && argv[i + 1] != nullptr) {
+                return argv[i + 1];
+            }
+            return "";
+        }
+    }
+
+    return nullptr;
+}
+
+static void LogAvailableRenderers() {
+    int count = SDL_GetNumRenderDrivers();
+    if (count <= 0) {
+        Logger::Log("SYSTEM", Logger::Level::Warn, "SDL reports no available render drivers.");
+        return;
+    }
+
+    Logger::Log("SYSTEM", Logger::Level::Info, "Available SDL render drivers:");
+    for (int i = 0; i < count; ++i) {
+        const char* driver = SDL_GetRenderDriver(i);
+        Logger::Log("SYSTEM", Logger::Level::Info, "  [%d] %s", i, driver ? driver : "<unknown>");
+    }
+}
+
+int main(int argc, char* argv[]) {
+    Logger::SetLogFile("aquilon.log");
+    Logger::SetConsoleOutput(true);
+    Logger::Log("APPLICATION", Logger::Level::Info, "Starting Aquilon...");
+
+    Logger::Log("SYSTEM", Logger::Level::Info, "Initializing SDL video subsystem.");
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to initialize SDL: %s", SDL_GetError());
         return 1;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, NULL);
-    if (!renderer) {
+    SDL_Window* window = SDL_CreateWindow("Aquilon", 800, 600, 0);
+    if (!window) {
+        Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to create window: %s", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+    Logger::Log("SYSTEM", Logger::Level::Info, "Created window: 800x600.");
+
+    const char* requested_backend = ParseRendererBackend(argc, argv);
+    if (requested_backend && requested_backend[0] == '\0') {
+        Logger::Log("SYSTEM", Logger::Level::Error,
+                    "Renderer backend flag given without a value. Use -renderer <name> or -vulkan.");
+        LogAvailableRenderers();
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
     }
 
+    if (requested_backend) {
+        Logger::Log("SYSTEM", Logger::Level::Info, "Requested renderer backend: %s", requested_backend);
+    } else {
+        Logger::Log("SYSTEM", Logger::Level::Info, "No renderer backend requested; SDL will choose the default.");
+    }
+
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, requested_backend);
+    if (!renderer) {
+        Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to create renderer: %s", SDL_GetError());
+        LogAvailableRenderers();
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    Logger::Log("SYSTEM", Logger::Level::Info, "Created SDL renderer backend: %s",
+                SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
+
     SDL_SetRenderVSync(renderer, 1);
+    Logger::Log("SYSTEM", Logger::Level::Info, "Enabled VSync.");
 
     Textures tex = load_textures(renderer);
+    Logger::Log("APPLICATION", Logger::Level::Info, "Loaded textures.");
+
     GUIEngine gui_engine(renderer);
+    Logger::Log("UI", Logger::Level::Info, "Initialized GUI engine.");
     
     GUIWindow* main_window = gui_engine.create_window(10, 10, 300, 200, "Game Status");
     main_window->set_content_draw_callback([](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
@@ -52,6 +131,8 @@ int main() {
     World world;
     Player player;
     Camera cam;
+    Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
+
     int win_w = 800, win_h = 600;
     SDL_GetWindowSize(window, &win_w, &win_h);
 
@@ -67,6 +148,7 @@ int main() {
 
     bool running = true;
     SDL_Event e;
+    Logger::Log("APPLICATION", Logger::Level::Info, "Entering main loop.");
 
     while (running) {
         Uint64 current_counter = SDL_GetPerformanceCounter();
@@ -162,10 +244,14 @@ int main() {
         SDL_RenderPresent(renderer);
     }
 
+    Logger::Log("APPLICATION", Logger::Level::Info, "Leaving main loop.");
+
     free_textures(tex);
+    Logger::Log("APPLICATION", Logger::Level::Info, "Released textures.");
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
+    Logger::Log("APPLICATION", Logger::Level::Info, "Aquilon shutdown complete.");
     return 0;
 }

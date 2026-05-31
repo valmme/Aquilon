@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AQUILON_PLAYER_H
+#define AQUILON_PLAYER_H
+
 #include "SDL3/SDL.h"
 #include "vmath.h"
 
@@ -76,3 +78,5 @@ private:
 
     void update_animation(float delta_time);
 };
+
+#endif // AQUILON_PLAYER_H

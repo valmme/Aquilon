@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AQUILON_GEN_TILE_H
+#define AQUILON_GEN_TILE_H
+
 #include "vmath.h"
 
 enum TileType {
@@ -13,3 +15,5 @@ struct Tile {
     bool breakable;
     int yield;
 };
+
+#endif // AQUILON_GEN_TILE_H

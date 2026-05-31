@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AQUILON_VMATH_H
+#define AQUILON_VMATH_H
+
 #include <cmath>
 
 struct vec2 {
@@ -52,3 +54,5 @@ static inline float vec3distance(vec3 a, vec3 b) {
     float dz = a.z - b.z;
     return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
+
+#endif // AQUILON_VMATH_H

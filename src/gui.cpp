@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "logger.h"
 #include <cmath>
 
 GUIWindow::GUIWindow(float x, float y, float width, float height, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
@@ -282,11 +283,7 @@ void GUIWindow::draw_close_button(SDL_Renderer* renderer) {
 
 static TTF_Font* load_default_font() {
     const char* font_paths[] = {
-        "resources/fonts/DejaVuSans.ttf",
-        "C:/Windows/Fonts/arial.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/Library/Fonts/Arial.ttf",
+        "resources/fonts/arial.ttf",
         nullptr
     };
 
@@ -300,11 +297,13 @@ static TTF_Font* load_default_font() {
 GUIEngine::GUIEngine(SDL_Renderer* renderer)
     : renderer(renderer), main_window(nullptr), title_font(nullptr) {
     if (!TTF_Init()) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize SDL_ttf: %s", SDL_GetError());
+        Logger::Log("UI", Logger::Level::Error,
+                    "Failed to initialize SDL_ttf: %s", SDL_GetError());
     } else {
         title_font = load_default_font();
         if (!title_font) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "SDL_ttf font not found; title text will not render.");
+            Logger::Log("UI", Logger::Level::Warn,
+                        "SDL_ttf font not found; title text will not render.");
         }
     }
 }

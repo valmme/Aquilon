@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AQUILON_GEN_WORLD_H
+#define AQUILON_GEN_WORLD_H
+
 #include <vector>
 #include <unordered_map>
 #include <cstdint>
@@ -44,3 +46,5 @@ private:
     Chunk& get_or_create_chunk(int cx, int cy);
     Chunk generate_chunk(int cx, int cy);
 };
+
+#endif // AQUILON_GEN_WORLD_H

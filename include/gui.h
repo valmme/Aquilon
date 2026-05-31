@@ -1,4 +1,5 @@
-#pragma once
+#ifndef AQUILON_GUI_H
+#define AQUILON_GUI_H
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
@@ -69,3 +70,5 @@ private:
     GUIWindow* main_window;
     TTF_Font* title_font;
 };
+
+#endif // AQUILON_GUI_H
