@@ -3,6 +3,8 @@
 #include <SDL3_image/SDL_image.h>
 
 struct Textures {
+    SDL_Texture* none;
+
     SDL_Texture* ice;
     SDL_Texture* snow;
     SDL_Texture* rock;
