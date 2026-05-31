@@ -1,6 +1,6 @@
 #include <SDL3/SDL.h>
 #include <cstdio>
-#include "include/player.h"
+#include "player.h"
 
 int main() {
     if (!SDL_Init(SDL_INIT_VIDEO)) return 1;
@@ -55,6 +55,7 @@ int main() {
         player.render(renderer);
 
         SDL_RenderPresent(renderer);
+        SDL_Delay(1);
     }
 
     SDL_DestroyRenderer(renderer);

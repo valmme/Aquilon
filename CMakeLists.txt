@@ -16,4 +16,5 @@ FetchContent_MakeAvailable(SDL)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(Aquilon ${SOURCES})
+target_include_directories(Aquilon PRIVATE include)
 target_link_libraries(Aquilon PRIVATE SDL3::SDL3)
