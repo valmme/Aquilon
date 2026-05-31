@@ -1,4 +1,5 @@
 #include "textures.h"
+#include <cstdio>
 
 Textures load_textures(SDL_Renderer* renderer) {
     Textures t;

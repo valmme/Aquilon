@@ -1,8 +1,23 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
+#include <cstdint>
 #include "tile.h"
 
 static const int CHUNK_SIZE = 16;
+
+struct ChunkKey {
+    int x, y;
+    bool operator==(const ChunkKey& o) const { return x == o.x && y == o.y; }
+};
+
+struct ChunkKeyHash {
+    size_t operator()(const ChunkKey& k) const {
+        size_t hx = std::hash<int>{}(k.x);
+        size_t hy = std::hash<int>{}(k.y);
+        return hx ^ (hy * 2654435761u);
+    }
+};
 
 struct Chunk {
     vec2 pos;
@@ -21,15 +36,11 @@ public:
 
     void update(int player_x, int player_y);
 
+    const std::unordered_map<ChunkKey, Chunk, ChunkKeyHash>& get_chunks() const { return chunks; }
+
 private:
-    std::vector<Chunk> chunks;
+    std::unordered_map<ChunkKey, Chunk, ChunkKeyHash> chunks;
 
     Chunk& get_or_create_chunk(int cx, int cy);
-    Chunk& get_or_create_chunk(vec2 position);
-
     Chunk generate_chunk(int cx, int cy);
-    Chunk generate_chunk(vec2 position);
-
-    int chunk_index(int cx, int cy);
-    int chunk_index(vec2 position);
 };

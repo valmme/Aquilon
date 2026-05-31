@@ -57,24 +57,28 @@ int main() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        for (int y = 0; y < MAP_H; y++) {
-            for (int x = 0; x < MAP_W; x++) {
+        for (auto& [key, chunk] : world.get_chunks()) {
+            for (int ty = 0; ty < CHUNK_SIZE; ty++) {
+                for (int tx = 0; tx < CHUNK_SIZE; tx++) {
+                    int world_x = chunk.pos.x * CHUNK_SIZE + tx;
+                    int world_y = chunk.pos.y * CHUNK_SIZE + ty;
 
-                Tile t = world.get_tile(x, y);
+                    Tile t = chunk.tiles[tx][ty];
 
-                SDL_Texture* current = tex.ice;
+                    SDL_Texture* current = tex.ice;
+                    if (t.type == ROCK) current = tex.rock;
+                    else if (t.type == SNOW) current = tex.snow;
+                    else if (t.type == ORE)  current = tex.ore;
 
-                if (t.type == ROCK) current = tex.rock;
-                else if (t.type == ORE) current = tex.ore;
+                    SDL_FRect dst = {
+                        world_x * TILE_SIZE - cam.x,
+                        world_y * TILE_SIZE - cam.y,
+                        (float)TILE_SIZE,
+                        (float)TILE_SIZE
+                    };
 
-                SDL_FRect dst = {
-                    x * TILE_SIZE - cam.x,
-                    y * TILE_SIZE - cam.y,
-                    TILE_SIZE,
-                    TILE_SIZE
-                };
-
-                SDL_RenderTexture(renderer, current, NULL, &dst);
+                    SDL_RenderTexture(renderer, current, NULL, &dst);
+                }
             }
         }
 

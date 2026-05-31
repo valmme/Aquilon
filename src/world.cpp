@@ -1,45 +1,55 @@
 #include "gen/world.h"
-#include <cstdlib>
+#include <cstdio>
+
+#define STB_PERLIN_IMPLEMENTATION
+#include "stb_perlin.h"
 
 World::World() {}
 
-int World::chunk_index(int cx, int cy) {
-    for (int i = 0; i < chunks.size(); i++) {
-        if (chunks[i].pos.x == cx && chunks[i].pos.y == cy) {
-            return i;
+Chunk& World::get_or_create_chunk(int cx, int cy) {
+    ChunkKey key{cx, cy};
+    auto it = chunks.find(key);
+    if (it != chunks.end()) return it->second;
+
+    auto [inserted_it, _] = chunks.emplace(key, generate_chunk(cx, cy));
+    return inserted_it->second;
+}
+
+Chunk World::generate_chunk(int cx, int cy) {
+    Chunk c;
+    c.pos.x = cx;
+    c.pos.y = cy;
+
+    for (int y = 0; y < CHUNK_SIZE; y++) {
+        for (int x = 0; x < CHUNK_SIZE; x++) {
+            float wx = (cx * CHUNK_SIZE + x) * 0.04f;
+            float wy = (cy * CHUNK_SIZE + y) * 0.04f;
+
+            float n = stb_perlin_noise3(wx, wy, 0.0f, 0, 0, 0) * 0.5f + 0.5f;
+            float detail = stb_perlin_noise3(wx * 3.0f, wy * 3.0f, 99.0f, 0, 0, 0) * 0.5f + 0.5f;
+
+            Tile t;
+
+            if (n < 0.55f)  t = {ICE, true, 1}; 
+            else if (n < 0.80f) t = {SNOW, true, 2};
+            else if (detail > 0.65f) t = {ORE, true, 5};
+            else t = {ROCK, true, 2};
+
+            c.tiles[x][y] = t;
         }
     }
 
-    return -1;
-}
-
-int World::chunk_index(vec2 position) {
-    return chunk_index(position.x, position.y);
-}
-
-Chunk& World::get_or_create_chunk(int cx, int cy) {
-    int idx = chunk_index(cx, cy);
-    if (idx != -1) return chunks[idx];
-
-    chunks.push_back(generate_chunk(cx, cy));
-    return chunks.back();
-}
-
-Chunk& World::get_or_create_chunk(vec2 position) {
-    return get_or_create_chunk(position.x, position.y);
+    return c;
 }
 
 Tile World::get_tile(int x, int y) {
-    int cx = x / CHUNK_SIZE;
-    int cy = y / CHUNK_SIZE;
-
-    if (x < 0) cx--;
-    if (y < 0) cy--;
+    int cx = (int)std::floor((float)x / CHUNK_SIZE);
+    int cy = (int)std::floor((float)y / CHUNK_SIZE);
 
     Chunk& c = get_or_create_chunk(cx, cy);
 
-    int lx = (x % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-    int ly = (y % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+    int lx = ((x % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+    int ly = ((y % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     return c.tiles[lx][ly];
 }
@@ -49,16 +59,13 @@ Tile World::get_tile(vec2 position) {
 }
 
 void World::set_tile(int x, int y, const Tile& tile) {
-    int cx = x / CHUNK_SIZE;
-    int cy = y / CHUNK_SIZE;
-
-    if (x < 0) cx--;
-    if (y < 0) cy--;
+    int cx = (int)std::floor((float)x / CHUNK_SIZE);
+    int cy = (int)std::floor((float)y / CHUNK_SIZE);
 
     Chunk& c = get_or_create_chunk(cx, cy);
 
-    int lx = (x % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
-    int ly = (y % CHUNK_SIZE + CHUNK_SIZE) % CHUNK_SIZE;
+    int lx = ((x % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
+    int ly = ((y % CHUNK_SIZE) + CHUNK_SIZE) % CHUNK_SIZE;
 
     c.tiles[lx][ly] = tile;
 }
@@ -67,45 +74,13 @@ void World::set_tile(vec2 position, const Tile& tile) {
     set_tile(position.x, position.y, tile);
 }
 
-
-Chunk World::generate_chunk(int cx, int cy) {
-    Chunk c;
-    c.pos.x = cx;
-    c.pos.y = cy;
-
-    for (int y = 0; y < CHUNK_SIZE; y++) {
-        for (int x = 0; x < CHUNK_SIZE; x++) {
-
-            int worldX = cx * CHUNK_SIZE + x;
-            int worldY = cy * CHUNK_SIZE + y;
-
-            int r = rand() % 100;
-
-            Tile t;
-
-            if (r < 70) t = {ICE, true, 1};
-            else if (r < 90) t = {ROCK, true, 2};
-            else t = {ORE, true, 5};
-            
-
-            c.tiles[x][y] = t;
-        }
-    }
-
-    return c;
-}
-
-Chunk World::generate_chunk(vec2 position) {
-    return generate_chunk(position.x, position.y);
-}
-
 void World::update(int player_x, int player_y) {
-    int pcx = player_x / CHUNK_SIZE;
-    int pcy = player_x / CHUNK_SIZE;
+    int pcx = (int)std::floor((float)player_x / CHUNK_SIZE);
+    int pcy = (int)std::floor((float)player_y / CHUNK_SIZE);
 
-    for (int y = -2; y <= 2; y++) {
-        for (int x = -2; x <= 2; x++) {
-            get_or_create_chunk(pcx + x, pcy + y);
+    for (int dy = -2; dy <= 2; dy++) {
+        for (int dx = -2; dx <= 2; dx++) {
+            get_or_create_chunk(pcx + dx, pcy + dy);
         }
     }
 }
