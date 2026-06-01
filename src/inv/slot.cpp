@@ -1,0 +1,146 @@
+#include "inv/slot.h"
+#include "vmath.h"
+#include <cstring>
+
+Slot::Slot(float x, float y) {
+    dest.x = x;
+    dest.y = y;
+}
+
+void Slot::update(Item*& cursor_item, const SDL_Event& e) {
+    if (item) {
+        item->dest.x = dest.x + 10;
+        item->dest.y = dest.y + 10;
+    }
+
+    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN) return;
+
+    float mx = (float)e.button.x;
+    float my = (float)e.button.y;
+    if (!point_in_rec(mx, my, dest)) return;
+
+    if (e.button.button == SDL_BUTTON_LEFT) {
+        if (!item) {
+            if (cursor_item) {
+                item = cursor_item;
+                cursor_item = nullptr;
+                
+                item->dest.x = dest.x + 10;
+                item->dest.y = dest.y + 10;
+            }
+        }
+
+        else {
+            if (cursor_item) {
+                if (cursor_item->type == item->type) {
+                    item->amount += cursor_item->amount;
+                    delete cursor_item;
+                    cursor_item = nullptr;
+                }
+
+                else {
+                    std::swap(cursor_item, item);
+                    item->dest.x = dest.x + 10;
+                    item->dest.y = dest.y + 10;
+                }
+            }
+
+            else {
+                cursor_item = item;
+                item = nullptr;
+            }
+        }
+    }
+
+    if (e.button.button == SDL_BUTTON_RIGHT) {
+        if (item && cursor_item) {
+            if (cursor_item->type == item->type) {
+                cursor_item->amount += item->amount;
+                delete item;
+                item = nullptr;
+            }
+
+            else {
+                std::swap(cursor_item, item);
+                item->dest.x = dest.x + 10;
+                item->dest.y = dest.y + 10;
+            }
+        }
+
+        else if (item && !cursor_item) {
+            if (item->amount > 1) {
+                int half = item->amount / 2;
+                int remainder = item->amount - half;
+                
+                item->amount = half;
+                cursor_item = item->copy();
+                cursor_item->amount = remainder;
+            }
+
+            else {
+                cursor_item = item;
+                item = nullptr;
+            }
+        }
+    }
+}
+
+void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
+    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 220);
+    SDL_RenderFillRect(renderer, &dest);
+
+    SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
+    SDL_FRect border = dest;
+
+    SDL_FRect t = {dest.x, dest.y, dest.w, 2};
+    SDL_FRect b = {dest.x, dest.y + dest.h - 2, dest.w, 2};
+    SDL_FRect l = {dest.x, dest.y, 2, dest.h};
+    SDL_FRect r = {dest.x + dest.w - 2, dest.y, 2, dest.h};
+    SDL_RenderFillRect(renderer, &t);
+    SDL_RenderFillRect(renderer, &b);
+    SDL_RenderFillRect(renderer, &l);
+    SDL_RenderFillRect(renderer, &r);
+
+    if (item) {
+        item->draw(renderer);
+
+        if (item->amount > 1 && font) {
+            char buf[16];
+            snprintf(buf, sizeof(buf), "%d", item->amount);
+
+            SDL_Color white = {255, 255, 255, 255};
+            SDL_Surface* surf = TTF_RenderText_Blended(font, buf, strlen(buf), white);
+            if (surf) {
+                SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+                if (tex) {
+                    float tw = (float)surf->w;
+                    float th = (float)surf->h;
+
+                    SDL_FRect shadow = {
+                        dest.x + dest.w - tw - 3,
+                        dest.y + dest.h - th - 2,
+                        tw + 2,
+                        th
+                    };
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
+                    SDL_RenderFillRect(renderer, &shadow);
+
+                    SDL_FRect tdst = {
+                        dest.x + dest.w - tw - 3,
+                        dest.y + dest.h - th - 2,
+                        tw,
+                        th
+                    };
+                    SDL_RenderTexture(renderer, tex, nullptr, &tdst);
+                    SDL_DestroyTexture(tex);
+                }
+                SDL_DestroySurface(surf);
+            }
+        }
+    }
+
+    if (selected) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 60);
+        SDL_RenderFillRect(renderer, &dest);
+    }
+}

@@ -12,6 +12,7 @@ static SDL_Texture* find_texture(SDL_Renderer* renderer, SDL_Texture* fallback, 
         return fallback;
     }
 
+    SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
     return tex;
 }
 
@@ -19,11 +20,14 @@ Textures load_textures(SDL_Renderer* renderer) {
     Textures t{};
 
     t.none = IMG_LoadTexture(renderer, "resources/textures/none.png");
+
     if (!t.none) {
         Logger::Log("APPLICATION", Logger::Level::Warn,
                     "Fallback texture 'none' could not be loaded from 'resources/textures/none.png': %s",
                     SDL_GetError());
     }
+
+    SDL_SetTextureScaleMode(t.none, SDL_SCALEMODE_NEAREST);
 
     t.ice  = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
     t.snow = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");

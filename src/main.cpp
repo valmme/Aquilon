@@ -12,6 +12,7 @@
 #include "gen/world.h"
 #include "config.h"
 #include "logger.h"
+#include "inv/inventory.h"
 
 const int TILE_SIZE = 32;
 
@@ -108,6 +109,7 @@ int main() {
         SDL_Quit();
         return 1;
     }
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
     Logger::Log("SYSTEM", Logger::Level::Info, "Created SDL renderer backend: %s",
                 SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
 
@@ -136,6 +138,8 @@ int main() {
     World world;
     Player player;
     Camera cam;
+    Inventory inv;
+    inv.pick(new Item{ItemType::UNDEFINED, "Undefined", 67, tex.none});
     Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
 
     int win_w = 800, win_h = 600;
@@ -255,9 +259,15 @@ int main() {
             if (!gui_consumed) {
                 player.handle_input(e);
             }
+
+            inv.handle_event(e);
         }
 
         player.update(delta_time);
+
+        float mx, my;
+        SDL_GetMouseState(&mx, &my);
+        inv.update(mx, my);
 
         int player_tile_x = (int)player.player.x / TILE_SIZE;
         int player_tile_y = (int)player.player.y / TILE_SIZE;
@@ -297,6 +307,7 @@ int main() {
         }
 
         player.render(renderer, cam);
+        inv.draw(renderer, debug_font.get());
         gui_engine.render_all();
 
         SDL_RenderPresent(renderer);
