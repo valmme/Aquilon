@@ -2,17 +2,78 @@
 #include "logger.h"
 #include <cmath>
 
+static constexpr SDL_Color GUI_BG_COLOR = {24, 27, 33, 255};
+static constexpr SDL_Color GUI_BORDER_COLOR = {74, 84, 98, 255};
+static constexpr SDL_Color GUI_TITLE_BG_COLOR = {29, 33, 40, 255};
+static constexpr SDL_Color GUI_TITLE_TEXT_COLOR = {238, 241, 245, 255};
+static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {12, 14, 18, 220};
+static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {170, 178, 188, 255};
+static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {234, 238, 242, 255};
+
+static bool RenderShadowedText(SDL_Renderer* renderer,
+                               TTF_Font* font,
+                               const std::string& text,
+                               float x,
+                               float y,
+                               const SDL_Color& fill_color,
+                               const SDL_Color& shadow_color,
+                               SDL_FRect& out_dst) {
+    if (!renderer || !font || text.empty()) {
+        return false;
+    }
+
+    const float text_x = std::floor(x);
+    const float text_y = std::floor(y);
+    SDL_Surface* shadow_surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), shadow_color);
+    if (!shadow_surface) {
+        return false;
+    }
+
+    SDL_Texture* shadow_texture = SDL_CreateTextureFromSurface(renderer, shadow_surface);
+    if (!shadow_texture) {
+        SDL_DestroySurface(shadow_surface);
+        return false;
+    }
+
+    SDL_Surface* text_surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), fill_color);
+    if (!text_surface) {
+        SDL_DestroyTexture(shadow_texture);
+        SDL_DestroySurface(shadow_surface);
+        return false;
+    }
+
+    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
+    if (!text_texture) {
+        SDL_DestroySurface(text_surface);
+        SDL_DestroyTexture(shadow_texture);
+        SDL_DestroySurface(shadow_surface);
+        return false;
+    }
+
+    out_dst = {text_x, text_y, (float)text_surface->w, (float)text_surface->h};
+
+    SDL_FRect shadow_dst = {text_x + 1.0f, text_y + 1.0f, (float)shadow_surface->w, (float)shadow_surface->h};
+    SDL_RenderTexture(renderer, shadow_texture, nullptr, &shadow_dst);
+    SDL_RenderTexture(renderer, text_texture, nullptr, &out_dst);
+
+    SDL_DestroyTexture(text_texture);
+    SDL_DestroySurface(text_surface);
+    SDL_DestroyTexture(shadow_texture);
+    SDL_DestroySurface(shadow_surface);
+    return true;
+}
+
 GUIWindow::GUIWindow(float x, float y, float width, float height, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
     : position({x, y}), size({width, height}), title(title),
-      background_color({17, 22, 22, 255}),
-      border_color({100, 140, 150, 255}),
+      background_color(GUI_BG_COLOR),
+      border_color(GUI_BORDER_COLOR),
       border_width(2.0f),
       title_font(title_font),
       renderer(renderer),
       dragging(false),
       drag_offset({0.0f, 0.0f}),
       closed(false),
-      title_bar_height(20.0f),
+      title_bar_height(21.0f),
       close_button_size(16.0f),
       close_button_pressed(false),
       close_button_rect({0, 0, 0, 0}),
@@ -155,43 +216,36 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
     float padding = 6.0f;
     float available_width = size.x - border_width * 2.0f;
 
-    SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, 200);
+    SDL_SetRenderDrawColor(renderer, GUI_TITLE_BG_COLOR.r, GUI_TITLE_BG_COLOR.g, GUI_TITLE_BG_COLOR.b, GUI_TITLE_BG_COLOR.a);
     SDL_FRect title_bg = {position.x + border_width, position.y + border_width, available_width, title_bar_height};
     SDL_RenderFillRect(renderer, &title_bg);
+
+    SDL_SetRenderDrawColor(renderer, 45, 54, 66, 255);
+    SDL_FRect title_line = {position.x + border_width, position.y + border_width + title_bar_height - 1.0f, available_width, 1.0f};
+    SDL_RenderFillRect(renderer, &title_line);
 
     draw_close_button(renderer);
 
     if (!title_font) return;
 
-    SDL_Color text_color = {255, 255, 255, 255};
-    SDL_Surface* text_surface = TTF_RenderText_Blended(title_font, title.c_str(), title.size(), text_color);
-    if (!text_surface) return;
+    SDL_Surface* measure_surface = TTF_RenderText_Solid(title_font, title.c_str(), title.size(), GUI_TITLE_TEXT_COLOR);
+    if (!measure_surface) return;
 
-    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
-    if (!text_texture) {
-        SDL_DestroySurface(text_surface);
+    float text_y = std::floor(position.y + border_width + (title_bar_height - (float)measure_surface->h) * 0.5f);
+    float text_x = std::floor(position.x + border_width + padding);
+    SDL_DestroySurface(measure_surface);
+
+    SDL_FRect title_dst = {0, 0, 0, 0};
+    if (!RenderShadowedText(renderer,
+                            title_font,
+                            title,
+                            text_x,
+                            text_y,
+                            GUI_TITLE_TEXT_COLOR,
+                            GUI_TITLE_SHADOW_COLOR,
+                            title_dst)) {
         return;
     }
-
-    int text_w = text_surface->w;
-    int text_h = text_surface->h;
-    SDL_DestroySurface(text_surface);
-
-    int max_text_width = (int)(available_width - padding * 2.0f - close_button_size - 8.0f);
-    SDL_FRect src_rect = {0.0f, 0.0f, (float)text_w, (float)text_h};
-    if (text_w > max_text_width) {
-        src_rect.w = (float)max_text_width;
-    }
-
-    SDL_FRect text_dst = {
-        position.x + border_width + padding,
-        position.y + border_width + (title_bar_height - text_h) * 0.5f,
-        src_rect.w,
-        (float)text_h
-    };
-
-    SDL_RenderTexture(renderer, text_texture, &src_rect, &text_dst);
-    SDL_DestroyTexture(text_texture);
 }
 
 void GUIWindow::render(SDL_Renderer* renderer) {
@@ -245,7 +299,7 @@ SDL_FRect GUIWindow::get_close_button_rect() const {
 void GUIWindow::draw_close_button(SDL_Renderer* renderer) {
     close_button_rect = get_close_button_rect();
     
-    SDL_Color icon_color = close_button_pressed ? SDL_Color{150, 150, 150, 255} : SDL_Color{255, 255, 255, 255};
+    SDL_Color icon_color = close_button_pressed ? GUI_CLOSE_ICON_PRESSED_COLOR : GUI_CLOSE_ICON_COLOR;
     SDL_SetRenderDrawColor(renderer, icon_color.r, icon_color.g, icon_color.b, icon_color.a);
     float inset = 3.0f;
     SDL_RenderLine(renderer,
@@ -268,7 +322,10 @@ static TTF_Font* load_default_font() {
 
     for (const char** path = font_paths; *path; ++path) {
         TTF_Font* font = TTF_OpenFont(*path, 16);
-        if (font) return font;
+        if (font) {
+            TTF_SetFontHinting(font, TTF_HINTING_LIGHT);
+            return font;
+        }
     }
 
     return nullptr;
