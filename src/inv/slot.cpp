@@ -2,15 +2,22 @@
 #include "vmath.h"
 #include <cstring>
 
+static constexpr float SLOT_SIZE = 25.0f;
+static constexpr float AMOUNT_FONT_SIZE = 8.0f;
+
 Slot::Slot(float x, float y) {
     dest.x = x;
     dest.y = y;
+    dest.w = SLOT_SIZE;
+    dest.h = SLOT_SIZE;
 }
 
 void Slot::update(Item*& cursor_item, const SDL_Event& e) {
     if (item) {
-        item->dest.x = dest.x + 10;
-        item->dest.y = dest.y + 10;
+        item->dest.x = dest.x;
+        item->dest.y = dest.y;
+        item->dest.w = SLOT_SIZE;
+        item->dest.h = SLOT_SIZE;
     }
 
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN) return;
@@ -24,27 +31,31 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
             if (cursor_item) {
                 item = cursor_item;
                 cursor_item = nullptr;
-                
-                item->dest.x = dest.x + 10;
-                item->dest.y = dest.y + 10;
-            }
-        }
 
+                item->dest.x = dest.x;
+                item->dest.y = dest.y;
+                item->dest.w = SLOT_SIZE;
+                item->dest.h = SLOT_SIZE;
+            }
+        } 
+        
         else {
             if (cursor_item) {
                 if (cursor_item->type == item->type) {
                     item->amount += cursor_item->amount;
                     delete cursor_item;
                     cursor_item = nullptr;
-                }
-
+                } 
+                
                 else {
                     std::swap(cursor_item, item);
-                    item->dest.x = dest.x + 10;
-                    item->dest.y = dest.y + 10;
+                    item->dest.x = dest.x;
+                    item->dest.y = dest.y;
+                    item->dest.w = SLOT_SIZE;
+                    item->dest.h = SLOT_SIZE;
                 }
-            }
-
+            } 
+            
             else {
                 cursor_item = item;
                 item = nullptr;
@@ -58,25 +69,27 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
                 cursor_item->amount += item->amount;
                 delete item;
                 item = nullptr;
-            }
-
+            } 
+            
             else {
                 std::swap(cursor_item, item);
-                item->dest.x = dest.x + 10;
-                item->dest.y = dest.y + 10;
+                item->dest.x = dest.x;
+                item->dest.y = dest.y;
+                item->dest.w = SLOT_SIZE;
+                item->dest.h = SLOT_SIZE;
             }
-        }
-
+        } 
+        
         else if (item && !cursor_item) {
             if (item->amount > 1) {
                 int half = item->amount / 2;
                 int remainder = item->amount - half;
-                
+
                 item->amount = half;
                 cursor_item = item->copy();
                 cursor_item->amount = remainder;
-            }
-
+            } 
+            
             else {
                 cursor_item = item;
                 item = nullptr;
@@ -90,7 +103,6 @@ void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
     SDL_RenderFillRect(renderer, &dest);
 
     SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
-    SDL_FRect border = dest;
 
     SDL_FRect t = {dest.x, dest.y, dest.w, 2};
     SDL_FRect b = {dest.x, dest.y + dest.h - 2, dest.w, 2};
@@ -102,7 +114,7 @@ void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
     SDL_RenderFillRect(renderer, &r);
 
     if (item) {
-        item->draw(renderer);
+        item->draw(renderer, SLOT_SIZE);
 
         if (item->amount > 1 && font) {
             char buf[16];
@@ -117,19 +129,21 @@ void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
                     float th = (float)surf->h;
 
                     SDL_FRect shadow = {
-                        dest.x + dest.w - tw - 3,
+                        dest.x + dest.w - tw - 2,
                         dest.y + dest.h - th - 2,
-                        tw + 2,
+                        tw + 1,
                         th
                     };
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 160);
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
                     SDL_RenderFillRect(renderer, &shadow);
 
+                    float scale = AMOUNT_FONT_SIZE / 10.0f;
+
                     SDL_FRect tdst = {
-                        dest.x + dest.w - tw - 3,
-                        dest.y + dest.h - th - 2,
-                        tw,
-                        th
+                        dest.x + dest.w - tw * scale - 2,
+                        dest.y + dest.h - th * scale - 2,
+                        tw * scale,
+                        th * scale
                     };
                     SDL_RenderTexture(renderer, tex, nullptr, &tdst);
                     SDL_DestroyTexture(tex);

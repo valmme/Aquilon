@@ -138,7 +138,7 @@ int main() {
     World world;
     Player player;
     Camera cam;
-    Inventory inv;
+    Inventory inv(gui_engine, debug_font.get());
     inv.pick(new Item{ItemType::UNDEFINED, "Undefined", 67, tex.none});
     Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
 
@@ -307,7 +307,6 @@ int main() {
         }
 
         player.render(renderer, cam);
-        inv.draw(renderer, debug_font.get());
         gui_engine.render_all();
 
         SDL_RenderPresent(renderer);

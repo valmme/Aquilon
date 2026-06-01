@@ -56,6 +56,7 @@ static inline float vec3distance(vec3 a, vec3 b) {
     return std::sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+// rectangles
 static inline bool point_in_rec(float px, float py, const SDL_FRect& r) {
     return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
 }

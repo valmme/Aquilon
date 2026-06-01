@@ -6,13 +6,15 @@
 #include <SDL3_ttf/SDL_ttf.h>
 #include "slot.h"
 #include "item.h"
+#include "gui.h"
 
 class Inventory {
 public:
     std::vector<Slot> slots;
     Item* cursor_item = nullptr;
+    bool open = false;
 
-    Inventory();
+    Inventory(GUIEngine& gui, TTF_Font* font);
     ~Inventory();
 
     void handle_event(const SDL_Event& e);
@@ -22,6 +24,14 @@ public:
     void pick(Item* item);
     void remove(ItemType type, int amount);
     int get_amount(ItemType type) const;
+
+private:
+    GUIEngine& gui;
+    GUIWindow* window = nullptr;
+    TTF_Font* font = nullptr;
+
+    void open_window();
+    void close_window();
 };
 
 #endif // AQUILON_INVENTORY_H

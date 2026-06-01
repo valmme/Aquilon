@@ -19,6 +19,7 @@ GUIWindow::GUIWindow(float x, float y, float width, float height, const std::str
       close_button_texture(nullptr),
       close_callback(nullptr) {}
 
+      
 GUIWindow::~GUIWindow() {
     if (close_button_texture) {
         SDL_DestroyTexture(close_button_texture);
@@ -67,6 +68,7 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
                 close_button_pressed = true;
                 return true;
             }
+
             if (mouse_x >= title_rect.x && mouse_x <= title_rect.x + title_rect.w &&
                 mouse_y >= title_rect.y && mouse_y <= title_rect.y + title_rect.h) {
                 dragging = true;
@@ -74,7 +76,9 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
                 return true;
             }
         }
-    } else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+    } 
+    
+    else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
         const SDL_MouseButtonEvent& button = e.button;
         float mouse_x = (float)button.x;
         float mouse_y = (float)button.y;
@@ -87,31 +91,38 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
                     close_callback();
                 }
             }
+
             close_button_pressed = false;
             return true;
         }
+
         if (button.button == SDL_BUTTON_LEFT && dragging) {
             dragging = false;
             return true;
         }
-    } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+    } 
+    
+    else if (e.type == SDL_EVENT_MOUSE_MOTION) {
         const SDL_MouseMotionEvent& motion = e.motion;
         if (close_button_pressed) {
             float mouse_x = (float)motion.x;
             float mouse_y = (float)motion.y;
             SDL_FRect close_rect = get_close_button_rect();
+
             if (mouse_x < close_rect.x || mouse_x > close_rect.x + close_rect.w ||
                 mouse_y < close_rect.y || mouse_y > close_rect.y + close_rect.h) {
                 close_button_pressed = false;
             }
             return true;
         }
+
         if (dragging) {
             position.x = motion.x - drag_offset.x;
             position.y = motion.y - drag_offset.y;
             return true;
         }
     }
+
     return false;
 }
 
@@ -136,6 +147,7 @@ void GUIWindow::draw_rect(SDL_Renderer* renderer, float x, float y, float w, flo
     SDL_FRect right = {x + w - thickness, y, thickness, h};
     SDL_RenderFillRect(renderer, &right);
 }
+
 
 void GUIWindow::draw_title(SDL_Renderer* renderer) {
     if (title.empty()) return;
@@ -232,41 +244,8 @@ SDL_FRect GUIWindow::get_close_button_rect() const {
 
 void GUIWindow::draw_close_button(SDL_Renderer* renderer) {
     close_button_rect = get_close_button_rect();
-    if (!close_button_texture && renderer) {
-        SDL_Texture* old_target = SDL_GetRenderTarget(renderer);
-        close_button_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, (int)close_button_rect.w, (int)close_button_rect.h);
-        if (close_button_texture) {
-            SDL_SetTextureBlendMode(close_button_texture, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderTarget(renderer, close_button_texture);
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-            SDL_RenderClear(renderer);
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            float inset = 3.0f;
-            SDL_RenderLine(renderer,
-                           (int)inset,
-                           (int)inset,
-                           (int)(close_button_rect.w - inset),
-                           (int)(close_button_rect.h - inset));
-            SDL_RenderLine(renderer,
-                           (int)(close_button_rect.w - inset),
-                           (int)inset,
-                           (int)inset,
-                           (int)(close_button_rect.h - inset));
-            SDL_SetRenderTarget(renderer, old_target);
-        }
-    }
-
-    if (close_button_texture) {
-        if (close_button_pressed) {
-            SDL_SetTextureColorMod(close_button_texture, 150, 150, 150);
-        } else {
-            SDL_SetTextureColorMod(close_button_texture, 255, 255, 255);
-        }
-        SDL_RenderTexture(renderer, close_button_texture, NULL, &close_button_rect);
-        return;
-    }
-
-    SDL_Color icon_color = close_button_pressed ? SDL_Color{120, 120, 120, 255} : SDL_Color{255, 255, 255, 255};
+    
+    SDL_Color icon_color = close_button_pressed ? SDL_Color{150, 150, 150, 255} : SDL_Color{255, 255, 255, 255};
     SDL_SetRenderDrawColor(renderer, icon_color.r, icon_color.g, icon_color.b, icon_color.a);
     float inset = 3.0f;
     SDL_RenderLine(renderer,
@@ -291,11 +270,12 @@ static TTF_Font* load_default_font() {
         TTF_Font* font = TTF_OpenFont(*path, 16);
         if (font) return font;
     }
+
     return nullptr;
 }
 
 GUIEngine::GUIEngine(SDL_Renderer* renderer)
-    : renderer(renderer), main_window(nullptr), title_font(nullptr) {
+    : renderer(renderer), main_window(nullptr), inv_window(nullptr), title_font(nullptr) {
     if (!TTF_Init()) {
         Logger::Log("UI", Logger::Level::Error,
                     "Failed to initialize SDL_ttf: %s", SDL_GetError());
@@ -311,11 +291,15 @@ GUIEngine::GUIEngine(SDL_Renderer* renderer)
 GUIEngine::~GUIEngine() {
     if (main_window) {
         delete main_window;
+        main_window = nullptr;
     }
-    if (title_font) {
-        TTF_CloseFont(title_font);
-        title_font = nullptr;
+
+    if (inv_window) {
+        delete inv_window;
+        inv_window = nullptr;
     }
+
+    if (title_font) TTF_CloseFont(title_font);
     TTF_Quit();
 }
 
@@ -328,22 +312,36 @@ GUIWindow* GUIEngine::create_window(float x, float y, float width, float height,
 }
 
 bool GUIEngine::handle_event(const SDL_Event& e) {
+    bool consumed = false;
+
+    if (inv_window) {
+        consumed = inv_window->handle_event(e);
+        if (inv_window->is_closed()) {
+            delete inv_window;
+            inv_window = nullptr;
+            return true;
+        }
+
+        if (consumed) return true;
+    }
+
     if (main_window) {
-        bool consumed = main_window->handle_event(e);
+        consumed = main_window->handle_event(e);
         if (main_window->is_closed()) {
             delete main_window;
             main_window = nullptr;
             return true;
         }
+
         return consumed;
     }
-    return false;
+
+    return consumed;
 }
 
 void GUIEngine::render_all() {
-    if (main_window) {
-        main_window->render(renderer);
-    }
+    if (main_window) main_window->render(renderer);
+    if (inv_window) inv_window->render(renderer);
 }
 
 void GUIEngine::clear_windows() {
@@ -355,4 +353,18 @@ void GUIEngine::clear_windows() {
 
 GUIWindow* GUIEngine::get_window() const {
     return main_window;
+}
+
+GUIWindow* GUIEngine::create_inv_window(float x, float y, float w, float h, const std::string& title) {
+    if (inv_window) delete inv_window;
+
+    inv_window = new GUIWindow(x, y, w, h, title, title_font, renderer);
+    return inv_window;
+}
+
+void GUIEngine::close_inv_window() {
+    if (inv_window) {
+        delete inv_window;
+        inv_window = nullptr;
+    }
 }

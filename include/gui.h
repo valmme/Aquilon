@@ -65,9 +65,14 @@ public:
     bool handle_event(const SDL_Event& e);
     GUIWindow* get_window() const;
 
+    // inventory
+    GUIWindow* create_inv_window(float x, float y, float w, float h, const std::string& title);
+    void close_inv_window();
+
 private:
     SDL_Renderer* renderer;
     GUIWindow* main_window;
+    GUIWindow* inv_window;
     TTF_Font* title_font;
 };
 

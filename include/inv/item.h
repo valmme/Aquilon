@@ -12,6 +12,8 @@ enum class ItemType {
     NONE
 };
 
+static constexpr float ITEM_PADDING = 2.5f;
+
 struct Item {
     ItemType type = ItemType::NONE;
     std::string name;
@@ -27,8 +29,18 @@ struct Item {
         return new Item(type, name, amount, texture);
     }
 
-    void draw(SDL_Renderer* renderer) const {
-        if (texture) SDL_RenderTexture(renderer, texture, nullptr, &dest);
+    void draw(SDL_Renderer* renderer, float slot_size = 25.0f) const {
+        if (texture) {
+            SDL_FRect src = {0, 0, (float)texture->w, (float)texture->h};
+            SDL_FRect dst = {
+                dest.x + ITEM_PADDING,
+                dest.y + ITEM_PADDING,
+                slot_size - ITEM_PADDING * 2.0f,
+                slot_size - ITEM_PADDING * 2.0f
+            };
+            SDL_RenderTexture(renderer, texture, &src, &dst);
+        } 
+        
         else {
             SDL_SetRenderDrawColor(renderer, 200, 150, 50, 255);
             SDL_RenderFillRect(renderer, &dest);
