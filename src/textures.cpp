@@ -31,8 +31,8 @@ Textures load_textures(SDL_Renderer* renderer) {
 
     t.ice  = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
     t.snow = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
-    t.rock = find_texture(renderer, t.none, "rock", "resources/textures/rock.png");
-    t.ore  = find_texture(renderer, t.none, "ore",  "resources/textures/rock.png");
+    t.stone = find_texture(renderer, t.none, "stone", "resources/textures/stone.png");
+    t.ore  = find_texture(renderer, t.none, "ore",  "resources/textures/stone.png");
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
 
@@ -60,7 +60,7 @@ void free_textures(Textures& t) {
 
     destroy_unique(t.ice);
     destroy_unique(t.snow);
-    destroy_unique(t.rock);
+    destroy_unique(t.stone);
     destroy_unique(t.ore);
     destroy_unique(t.none);
 

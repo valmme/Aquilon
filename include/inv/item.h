@@ -5,7 +5,7 @@
 #include <SDL3/SDL.h>
 
 enum class ItemType {
-    ROCK,
+    STONE,
     IRON_ORE,
     COPPER_ORE,
     UNDEFINED,

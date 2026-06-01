@@ -4,9 +4,10 @@
 #include "vmath.h"
 
 enum TileType {
+    EMPTY,
     ICE,
     SNOW,
-    ROCK,
+    STONE,
     ORE
 };
 

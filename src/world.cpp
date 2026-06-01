@@ -30,12 +30,12 @@ Chunk World::generate_chunk(int cx, int cy) {
             float n = stb_perlin_noise3(wx, wy, 0.0f, 0, 0, 0) * 0.5f + 0.5f;
             float detail = stb_perlin_noise3(wx * 3.0f, wy * 3.0f, 99.0f, 0, 0, 0) * 0.5f + 0.5f;
 
-            Tile t;
+            Tile t = {EMPTY, false, 0};
 
-            if (n < 0.55f)  t = {ICE, true, 1}; 
-            else if (n < 0.80f) t = {SNOW, true, 2};
-            else if (detail > 0.65f) t = {ORE, true, 5};
-            else t = {ROCK, true, 2};
+            if (n < 0.55f)  t = {ICE, true, 1};
+            else if (n < 0.80f) t = {SNOW, true, 1};
+            else if (detail > 0.65f) t = {ORE, true, 1};
+            else t = {STONE, true, 1};
 
             c.tiles[x][y] = t;
         }

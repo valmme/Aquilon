@@ -2,6 +2,7 @@
 #include <SDL3_image/SDL_image.h>
 #include <SDL3/SDL_filesystem.h>
 #include <cstddef>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <memory>
@@ -62,6 +63,89 @@ static void DrawDebugText(SDL_Renderer* renderer, TTF_Font* font, float x, float
     SDL_DestroySurface(surface);
     SDL_RenderTexture(renderer, texture, nullptr, &dst);
     SDL_DestroyTexture(texture);
+}
+
+struct MiningState {
+    bool active = false;
+    int tile_x = 0;
+    int tile_y = 0;
+    TileType tile_type = EMPTY;
+    float duration = 0.0f;
+    float progress = 0.0f;
+};
+
+static SDL_Point ScreenToTile(const Camera& cam, float screen_x, float screen_y) {
+    const float world_x = cam.x + screen_x / cam.zoom;
+    const float world_y = cam.y + screen_y / cam.zoom;
+    return {
+        (int)std::floor(world_x / (float)TILE_SIZE),
+        (int)std::floor(world_y / (float)TILE_SIZE)
+    };
+}
+
+static float MiningDurationFor(TileType type) {
+    switch (type) {
+        case STONE: return 0.80f;
+        case ORE:  return 1.10f;
+        default:   return 0.0f;
+    }
+}
+
+static bool IsMineable(TileType type) {
+    return type == STONE || type == ORE;
+}
+
+static const char* TileResourceName(TileType type) {
+    switch (type) {
+        case STONE: return "Stone";
+        case ORE:  return "Iron Ore";
+        default:   return "Unknown";
+    }
+}
+
+static Item* MakeDropForTile(const Tile& tile, const Textures& tex) {
+    switch (tile.type) {
+        case STONE:
+            return new Item{ItemType::STONE, "Stone", 1, tex.stone};
+        case ORE:
+            return new Item{ItemType::IRON_ORE, "Iron Ore", 1, tex.ore};
+        default:
+            return nullptr;
+    }
+}
+
+static void DrawMiningProgressBar(SDL_Renderer* renderer, int win_w, int win_h, const MiningState& mining) {
+    if (!renderer || !mining.active || mining.duration <= 0.0f) {
+        return;
+    }
+
+    float progress = mining.progress / mining.duration;
+    if (progress < 0.0f) progress = 0.0f;
+    if (progress > 1.0f) progress = 1.0f;
+
+    float bar_w = (float)(win_w - 48);
+    if (bar_w > 420.0f) bar_w = 420.0f;
+    if (bar_w < 0.0f) bar_w = 0.0f;
+    const float bar_x = ((float)win_w - bar_w) * 0.5f;
+    const float bar_y = (float)win_h - 20.0f;
+    const float bar_h = 6.0f;
+
+    SDL_SetRenderDrawColor(renderer, 12, 15, 18, 220);
+    SDL_FRect bg = {bar_x, bar_y, bar_w, bar_h};
+    SDL_RenderFillRect(renderer, &bg);
+
+    SDL_SetRenderDrawColor(renderer, 58, 66, 76, 220);
+    SDL_FRect top = {bar_x, bar_y, bar_w, 1.0f};
+    SDL_FRect bottom = {bar_x, bar_y + bar_h - 1.0f, bar_w, 1.0f};
+    SDL_RenderFillRect(renderer, &top);
+    SDL_RenderFillRect(renderer, &bottom);
+
+    const float fill_w = (bar_w - 2.0f) * progress;
+    if (fill_w > 0.0f) {
+        SDL_SetRenderDrawColor(renderer, 216, 176, 80, 255);
+        SDL_FRect fill = {bar_x + 1.0f, bar_y + 1.0f, fill_w, bar_h - 2.0f};
+        SDL_RenderFillRect(renderer, &fill);
+    }
 }
 
 int main() {
@@ -155,8 +239,59 @@ int main() {
     world.update(initial_player_tile_x, initial_player_tile_y);
 
     float fps = 0.0f;
+    MiningState mining;
+    bool right_hold_blocked = false;
+    bool resource_panel_visible = false;
+    const char* resource_panel_name = "";
+    int resource_panel_yield = 0;
+    TileType resource_panel_type = EMPTY;
 
     GUIWindow* main_window = gui_engine.create_window(10, 10, 330, 220, "Game Status");
+    GUIWindow* resource_panel = gui_engine.create_info_window(0, 0, 220, 110);
+    resource_panel->set_visible(false);
+    resource_panel->set_background_color(21, 24, 29, 245);
+    resource_panel->set_border_color(66, 74, 86, 255);
+    resource_panel->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+        SDL_SetRenderDrawColor(renderer, 31, 35, 42, 255);
+        SDL_RenderFillRect(renderer, &content_rect);
+
+        SDL_SetRenderDrawColor(renderer, 58, 70, 86, 255);
+        SDL_FRect accent = {content_rect.x, content_rect.y, content_rect.w, 2.0f};
+        SDL_RenderFillRect(renderer, &accent);
+
+        SDL_FRect icon_bg = {content_rect.x + 10.0f, content_rect.y + 10.0f, 28.0f, 28.0f};
+        SDL_SetRenderDrawColor(renderer, 12, 14, 18, 255);
+        SDL_RenderFillRect(renderer, &icon_bg);
+
+        SDL_Texture* icon = nullptr;
+        if (resource_panel_type == STONE) icon = tex.stone;
+        else if (resource_panel_type == ORE) icon = tex.ore;
+
+        if (icon) {
+            SDL_FRect icon_dst = {icon_bg.x + 2.0f, icon_bg.y + 2.0f, icon_bg.w - 4.0f, icon_bg.h - 4.0f};
+            SDL_RenderTexture(renderer, icon, nullptr, &icon_dst);
+        }
+
+        const float left = icon_bg.x + icon_bg.w + 10.0f;
+        float y = content_rect.y + 10.0f;
+        const SDL_Color title_color = {240, 243, 247, 255};
+        const SDL_Color muted = {182, 189, 197, 255};
+        const SDL_Color accent_color = {216, 176, 80, 255};
+
+        DrawDebugText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
+        y += 18.0f;
+
+        char line[128];
+        snprintf(line, sizeof(line), "Yield: %d", resource_panel_yield);
+        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        y += 18.0f;
+
+        snprintf(line, sizeof(line), "Type: %s", resource_panel_type == ORE ? "Ore" : "Stone");
+        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        y += 18.0f;
+
+        DrawDebugText(renderer, debug_font.get(), left, y, "Hold RMB to mine", accent_color);
+    });
     main_window->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Color panel_fill = {24, 30, 34, 255};
         SDL_SetRenderDrawColor(renderer, panel_fill.r, panel_fill.g, panel_fill.b, panel_fill.a);
@@ -236,6 +371,12 @@ int main() {
             bool gui_consumed = gui_engine.handle_event(e);
             main_window = gui_engine.get_window();
 
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT && gui_consumed) {
+                mining.active = false;
+                mining.progress = 0.0f;
+                right_hold_blocked = true;
+            }
+
             if (!gui_consumed && e.type == SDL_EVENT_MOUSE_WHEEL) {
                 float prev_zoom = cam.zoom;
                 float factor = powf(1.1f, (float)e.wheel.y);
@@ -256,6 +397,18 @@ int main() {
                 }
             }
 
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT && !gui_consumed) {
+                mining.active = false;
+                mining.progress = 0.0f;
+                right_hold_blocked = false;
+            }
+
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_RIGHT) {
+                mining.active = false;
+                mining.progress = 0.0f;
+                right_hold_blocked = false;
+            }
+
             if (!gui_consumed) {
                 player.handle_input(e);
             }
@@ -264,10 +417,6 @@ int main() {
         }
 
         player.update(delta_time);
-
-        float mx, my;
-        SDL_GetMouseState(&mx, &my);
-        inv.update(mx, my);
 
         int player_tile_x = (int)player.player.x / TILE_SIZE;
         int player_tile_y = (int)player.player.y / TILE_SIZE;
@@ -283,6 +432,55 @@ int main() {
         }
         cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
 
+        float mx, my;
+        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mx, &my);
+        inv.update(mx, my);
+        SDL_Point hovered_tile = ScreenToTile(cam, mx, my);
+        Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
+
+        resource_panel_visible = IsMineable(hovered_tile_data.type);
+        resource_panel_name = TileResourceName(hovered_tile_data.type);
+        resource_panel_yield = hovered_tile_data.yield;
+        resource_panel_type = hovered_tile_data.type;
+        resource_panel->position.x = (float)win_w - resource_panel->size.x - 16.0f;
+        resource_panel->position.y = 16.0f;
+        resource_panel->set_visible(resource_panel_visible);
+
+        if (!(mouse_buttons & SDL_BUTTON_RMASK)) {
+            mining.active = false;
+            mining.progress = 0.0f;
+            right_hold_blocked = false;
+        } else if (!right_hold_blocked) {
+            if (!mining.active && IsMineable(hovered_tile_data.type)) {
+                mining.active = true;
+                mining.tile_x = hovered_tile.x;
+                mining.tile_y = hovered_tile.y;
+                mining.tile_type = hovered_tile_data.type;
+                mining.duration = MiningDurationFor(hovered_tile_data.type);
+                mining.progress = 0.0f;
+            }
+        }
+
+        if (mining.active) {
+            Tile mined_tile = world.get_tile(mining.tile_x, mining.tile_y);
+
+            if (hovered_tile.x != mining.tile_x || hovered_tile.y != mining.tile_y || mined_tile.type != mining.tile_type || !IsMineable(mined_tile.type)) {
+                mining.active = false;
+                mining.progress = 0.0f;
+            } else {
+                mining.progress += delta_time;
+
+                if (mining.progress >= mining.duration) {
+                    world.set_tile(mining.tile_x, mining.tile_y, Tile{EMPTY, false, 0});
+                    if (Item* drop = MakeDropForTile(mined_tile, tex)) {
+                        inv.pick(drop);
+                    }
+                    mining.active = false;
+                    mining.progress = 0.0f;
+                }
+            }
+        }
+
         SDL_SetRenderDrawColor(renderer, 50, 130, 230, 255);
         SDL_RenderClear(renderer);
 
@@ -294,10 +492,13 @@ int main() {
 
                     Tile t = chunk.tiles[tx][ty];
 
-                    SDL_Texture* current = tex.ice;
-                    if (t.type == ROCK) current = tex.rock;
+                    SDL_Texture* current = nullptr;
+                    if (t.type == ICE) current = tex.ice;
                     else if (t.type == SNOW) current = tex.snow;
+                    else if (t.type == STONE) current = tex.stone;
                     else if (t.type == ORE)  current = tex.ore;
+
+                    if (!current) continue;
 
                     SDL_FRect dst = cam.WorldToScreenRect(world_x * TILE_SIZE, world_y * TILE_SIZE, (float)TILE_SIZE, (float)TILE_SIZE);
 
@@ -309,6 +510,7 @@ int main() {
         player.render(renderer, cam);
         gui_engine.render_all();
         inv.draw(renderer, debug_font.get());
+        DrawMiningProgressBar(renderer, win_w, win_h, mining);
 
         SDL_RenderPresent(renderer);
     }

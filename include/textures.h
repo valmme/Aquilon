@@ -9,7 +9,7 @@ struct Textures {
 
     SDL_Texture* ice;
     SDL_Texture* snow;
-    SDL_Texture* rock;
+    SDL_Texture* stone;
     SDL_Texture* ore;
 };
 

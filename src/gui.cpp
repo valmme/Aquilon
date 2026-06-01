@@ -73,6 +73,8 @@ GUIWindow::GUIWindow(float x, float y, float width, float height, const std::str
       dragging(false),
       drag_offset({0.0f, 0.0f}),
       closed(false),
+      visible(true),
+      chrome_visible(true),
       title_bar_height(21.0f),
       close_button_size(16.0f),
       close_button_pressed(false),
@@ -108,18 +110,30 @@ void GUIWindow::set_title_font(TTF_Font* font) {
     title_font = font;
 }
 
+void GUIWindow::set_chrome_visible(bool visible) {
+    chrome_visible = visible;
+}
+
+void GUIWindow::set_visible(bool is_visible) {
+    visible = is_visible;
+}
+
 void GUIWindow::set_content_draw_callback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback) {
     content_draw_callback = callback;
 }
 
 bool GUIWindow::handle_event(const SDL_Event& e) {
-    if (closed) {
+    if (closed || !visible) {
         return false;
     }
 
     if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
         const SDL_MouseButtonEvent& button = e.button;
         if (button.button == SDL_BUTTON_LEFT) {
+            if (!chrome_visible) {
+                return false;
+            }
+
             float mouse_x = (float)button.x;
             float mouse_y = (float)button.y;
             SDL_FRect title_rect = {position.x + border_width, position.y + border_width, size.x - border_width * 2.0f, title_bar_height};
@@ -140,6 +154,10 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
     } 
     
     else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        if (!chrome_visible) {
+            return false;
+        }
+
         const SDL_MouseButtonEvent& button = e.button;
         float mouse_x = (float)button.x;
         float mouse_y = (float)button.y;
@@ -164,6 +182,10 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
     } 
     
     else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+        if (!chrome_visible) {
+            return false;
+        }
+
         const SDL_MouseMotionEvent& motion = e.motion;
         if (close_button_pressed) {
             float mouse_x = (float)motion.x;
@@ -211,7 +233,7 @@ void GUIWindow::draw_rect(SDL_Renderer* renderer, float x, float y, float w, flo
 
 
 void GUIWindow::draw_title(SDL_Renderer* renderer) {
-    if (title.empty()) return;
+    if (!chrome_visible || title.empty()) return;
 
     float padding = 6.0f;
     float available_width = size.x - border_width * 2.0f;
@@ -249,7 +271,7 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
 }
 
 void GUIWindow::render(SDL_Renderer* renderer) {
-    if (closed) {
+    if (closed || !visible) {
         return;
     }
 
@@ -268,14 +290,16 @@ void GUIWindow::render(SDL_Renderer* renderer) {
     }
 
     draw_rect(renderer, position.x, position.y, size.x, size.y, border_color, border_width);
-    draw_title(renderer);
+    if (chrome_visible) {
+        draw_title(renderer);
+    }
 }
 
 SDL_FRect GUIWindow::get_content_rect() const {
     float content_x = position.x + border_width;
-    float content_y = position.y + border_width + title_bar_height;
+    float content_y = position.y + border_width + (chrome_visible ? title_bar_height : 0.0f);
     float content_w = size.x - border_width * 2.0f;
-    float content_h = size.y - border_width * 2.0f - title_bar_height;
+    float content_h = size.y - border_width * 2.0f - (chrome_visible ? title_bar_height : 0.0f);
     return {content_x, content_y, content_w, content_h};
 }
 
@@ -332,7 +356,7 @@ static TTF_Font* load_default_font() {
 }
 
 GUIEngine::GUIEngine(SDL_Renderer* renderer)
-    : renderer(renderer), main_window(nullptr), inv_window(nullptr), title_font(nullptr) {
+    : renderer(renderer), main_window(nullptr), inv_window(nullptr), info_window(nullptr), title_font(nullptr) {
     if (!TTF_Init()) {
         Logger::Log("UI", Logger::Level::Error,
                     "Failed to initialize SDL_ttf: %s", SDL_GetError());
@@ -356,6 +380,11 @@ GUIEngine::~GUIEngine() {
         inv_window = nullptr;
     }
 
+    if (info_window) {
+        delete info_window;
+        info_window = nullptr;
+    }
+
     if (title_font) TTF_CloseFont(title_font);
     TTF_Quit();
 }
@@ -366,6 +395,16 @@ GUIWindow* GUIEngine::create_window(float x, float y, float width, float height,
     }
     main_window = new GUIWindow(x, y, width, height, title, title_font, renderer);
     return main_window;
+}
+
+GUIWindow* GUIEngine::create_info_window(float x, float y, float width, float height) {
+    if (info_window) {
+        delete info_window;
+    }
+
+    info_window = new GUIWindow(x, y, width, height, "", title_font, renderer);
+    info_window->set_chrome_visible(false);
+    return info_window;
 }
 
 bool GUIEngine::handle_event(const SDL_Event& e) {
@@ -399,6 +438,7 @@ bool GUIEngine::handle_event(const SDL_Event& e) {
 void GUIEngine::render_all() {
     if (main_window) main_window->render(renderer);
     if (inv_window) inv_window->render(renderer);
+    if (info_window) info_window->render(renderer);
 }
 
 void GUIEngine::clear_windows() {
@@ -423,5 +463,12 @@ void GUIEngine::close_inv_window() {
     if (inv_window) {
         delete inv_window;
         inv_window = nullptr;
+    }
+}
+
+void GUIEngine::close_info_window() {
+    if (info_window) {
+        delete info_window;
+        info_window = nullptr;
     }
 }

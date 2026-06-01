@@ -26,6 +26,8 @@ public:
     void set_border_width(float width);
     void set_title(const std::string& new_title);
     void set_title_font(TTF_Font* font);
+    void set_chrome_visible(bool visible);
+    void set_visible(bool visible);
     void set_content_draw_callback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback);
     void set_close_callback(const std::function<void()>& callback);
     bool handle_event(const SDL_Event& e);
@@ -38,6 +40,8 @@ private:
     bool dragging;
     vec2 drag_offset;
     bool closed;
+    bool visible;
+    bool chrome_visible;
     float title_bar_height;
     float close_button_size;
     bool close_button_pressed;
@@ -60,6 +64,7 @@ public:
     ~GUIEngine();
     
     GUIWindow* create_window(float x, float y, float width, float height, const std::string& title = "");
+    GUIWindow* create_info_window(float x, float y, float width, float height);
     void render_all();
     void clear_windows();
     bool handle_event(const SDL_Event& e);
@@ -68,11 +73,13 @@ public:
     // inventory
     GUIWindow* create_inv_window(float x, float y, float w, float h, const std::string& title);
     void close_inv_window();
+    void close_info_window();
 
 private:
     SDL_Renderer* renderer;
     GUIWindow* main_window;
     GUIWindow* inv_window;
+    GUIWindow* info_window;
     TTF_Font* title_font;
 };
 

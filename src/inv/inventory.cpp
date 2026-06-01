@@ -106,10 +106,16 @@ void Inventory::open_window() {
 
 void Inventory::close_window() {
     gui.close_inv_window();
+    open = false;
     window = nullptr;
 }
 
 void Inventory::handle_event(const SDL_Event& e) {
+    if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
+        if (open) close_window();
+        return;
+    }
+
     if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_E) {
         open = !open;
         if (open) open_window();
@@ -130,22 +136,20 @@ void Inventory::handle_event(const SDL_Event& e) {
 }
 
 void Inventory::update(float mx, float my) {
-    if (!open) return;
-
-    for (Slot& slot : slots)
-        slot.selected = point_in_rec(mx, my, slot.dest);
-
     if (cursor_item) {
         cursor_item->dest.w = 30.0f;
         cursor_item->dest.h = 30.0f;
         cursor_item->dest.x = mx - cursor_item->dest.w * 0.5f;
         cursor_item->dest.y = my - cursor_item->dest.h * 0.5f;
     }
+
+    if (!open) return;
+
+    for (Slot& slot : slots)
+        slot.selected = point_in_rec(mx, my, slot.dest);
 }
 
 void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
-    if (!open) return;
-
     if (cursor_item && font) {
         cursor_item->draw(renderer);
 
