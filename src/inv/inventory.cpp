@@ -1,6 +1,7 @@
 #include "inv/inventory.h"
 #include "vmath.h"
 #include <cstdio>
+#include <cstring>
 
 static constexpr float SLOT_SIZE      = 25.0f;
 static constexpr float SLOT_SPACING   = 5.0f;
@@ -48,7 +49,9 @@ void Inventory::open_window() {
             slots[i].dest.h = SLOT_SIZE;
         }
 
-        for (const Slot& slot : slots) slot.draw(renderer, font);
+        for (const Slot& slot : slots) {
+            slot.draw(renderer, font);
+        }
 
         if (font) {
             for (const Slot& slot : slots) {
@@ -61,7 +64,23 @@ void Inventory::open_window() {
                         SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
 
                         if (tex) {
-                            SDL_FRect bg = {slot.dest.x + 20, slot.dest.y - 22, (float)surf->w + 8, (float)surf->h + 4};
+                            float bg_w = (float)surf->w + 8.0f;
+                            float bg_h = (float)surf->h + 4.0f;
+                            float bg_x = slot.dest.x + slot.dest.w + 6.0f;
+                            float bg_y = slot.dest.y - bg_h - 4.0f;
+
+                            if (bg_y < content_rect.y) {
+                                bg_y = slot.dest.y + slot.dest.h + 4.0f;
+                            }
+
+                            float max_x = content_rect.x + content_rect.w - bg_w;
+                            float max_y = content_rect.y + content_rect.h - bg_h;
+                            if (bg_x < content_rect.x) bg_x = content_rect.x;
+                            if (bg_y < content_rect.y) bg_y = content_rect.y;
+                            if (bg_x > max_x) bg_x = max_x;
+                            if (bg_y > max_y) bg_y = max_y;
+
+                            SDL_FRect bg = {bg_x, bg_y, bg_w, bg_h};
                             SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
                             SDL_RenderFillRect(renderer, &bg);
 
@@ -75,8 +94,7 @@ void Inventory::open_window() {
                 }
             }
         }
-        
-        draw(renderer, font);
+
         SDL_SetRenderClipRect(renderer, nullptr);
     });
 
@@ -118,16 +136,15 @@ void Inventory::update(float mx, float my) {
         slot.selected = point_in_rec(mx, my, slot.dest);
 
     if (cursor_item) {
-        cursor_item->dest.x = mx - 15;
-        cursor_item->dest.y = my - 15;
+        cursor_item->dest.w = 30.0f;
+        cursor_item->dest.h = 30.0f;
+        cursor_item->dest.x = mx - cursor_item->dest.w * 0.5f;
+        cursor_item->dest.y = my - cursor_item->dest.h * 0.5f;
     }
 }
 
 void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
     if (!open) return;
-
-    for (const Slot& slot : slots)
-        slot.draw(renderer, font);
 
     if (cursor_item && font) {
         cursor_item->draw(renderer);

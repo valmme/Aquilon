@@ -308,6 +308,7 @@ int main() {
 
         player.render(renderer, cam);
         gui_engine.render_all();
+        inv.draw(renderer, debug_font.get());
 
         SDL_RenderPresent(renderer);
     }
