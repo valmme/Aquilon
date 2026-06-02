@@ -13,6 +13,7 @@
 #include "gen/world.h"
 #include "config.h"
 #include "logger.h"
+#include "inv/crafting.h"
 #include "inv/inventory.h"
 
 const int TILE_SIZE = 32;
@@ -273,8 +274,11 @@ int main() {
     Player player;
     Camera cam;
     Inventory inv(gui_engine, tex, debug_font.get());
-
+    CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
+    inv.set_crafting_system(crafting);
     inv.pick(new Item{ItemType::FURNACE, "Furnace", 67, tex.furnace, true, {2, 2}});
+
+    crafting->initialize_recipes(&tex);
 
     Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
 
@@ -635,6 +639,8 @@ int main() {
 
     free_textures(tex);
     Logger::Log("APPLICATION", Logger::Level::Info, "Released textures.");
+
+    delete crafting;
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

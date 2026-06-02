@@ -1,4 +1,5 @@
 #include "inv/inventory.h"
+#include "inv/crafting.h"
 #include "vmath.h"
 #include <cstdio>
 #include <cstring>
@@ -7,6 +8,8 @@ static constexpr float SLOT_SIZE      = 35.0f;
 static constexpr float SLOT_SPACING   = 0.0f;
 static constexpr int   INVENTORY_COLS = 10;
 static constexpr int   INVENTORY_ROWS = 9;
+
+static constexpr float CRAFT_PANEL_W = 260.0f;
 
 static constexpr float INV_WIN_W = INVENTORY_COLS * SLOT_SIZE + (INVENTORY_COLS + 1) * SLOT_SPACING + SLOT_SPACING;
 static constexpr float INV_WIN_H = INVENTORY_ROWS * SLOT_SIZE + (INVENTORY_ROWS + 1) * SLOT_SPACING + SLOT_SIZE;
@@ -27,7 +30,7 @@ Inventory::~Inventory() {
 }
 
 void Inventory::open_window() {
-    window = gui.create_inv_window(200, 200, INV_WIN_W, INV_WIN_H, "Inventory");
+    window = gui.create_inv_window(100, 150, INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H, "Inventory");
 
     window->set_content_draw_callback([this](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Rect clip = {
@@ -95,6 +98,13 @@ void Inventory::open_window() {
             }
         }
 
+        craft_rect = {
+            content_rect.x + INV_WIN_W,
+            content_rect.y,
+            CRAFT_PANEL_W,
+            content_rect.h
+        };
+
         SDL_SetRenderClipRect(renderer, nullptr);
     });
 
@@ -133,6 +143,10 @@ void Inventory::handle_event(const SDL_Event& e) {
             slot.item = nullptr;
         }
     }
+
+    if (crafting) {
+        crafting->handle_event(e);
+    }
 }
 
 void Inventory::update(float mx, float my) {
@@ -147,6 +161,10 @@ void Inventory::update(float mx, float my) {
 
     for (Slot& slot : slots)
         slot.selected = point_in_rec(mx, my, slot.dest);
+
+    if (crafting) {
+        crafting->select_by_mouse(mx, my, craft_rect);
+    }
 }
 
 void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {

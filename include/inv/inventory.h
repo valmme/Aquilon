@@ -2,11 +2,14 @@
 #define AQUILON_INVENTORY_H
 
 #include <vector>
+#include <memory>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #include "slot.h"
 #include "item.h"
 #include "gui.h"
+
+class CraftingSystem;
 
 class Inventory {
 public:
@@ -35,7 +38,6 @@ public:
 
     bool consume_cursor_item_one() {
         if (!cursor_item) return false;
-
         cursor_item->amount -= 1;
         if (cursor_item->amount <= 0) {
             delete cursor_item;
@@ -44,10 +46,22 @@ public:
         return true;
     }
 
+    void set_crafting_system(CraftingSystem* system) {
+        crafting = system;
+    }
+
+    CraftingSystem* get_crafting_system() const {
+        return crafting;
+    }
+
+    SDL_FRect craft_rect{};
+
 private:
     GUIEngine& gui;
     GUIWindow* window = nullptr;
     TTF_Font* font = nullptr;
+
+    CraftingSystem* crafting = nullptr;
 
     void open_window();
     void close_window();
