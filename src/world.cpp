@@ -34,7 +34,7 @@ Chunk World::generate_chunk(int cx, int cy) {
 
             if (n < 0.55f)  t = {ICE, true, 1};
             else if (n < 0.80f) t = {SNOW, true, 1};
-            else if (detail > 0.65f) t = {ORE, true, 1};
+            else if (detail > 0.65f) t = {IRON_ORE, true, 1};
             else t = {STONE, true, 1};
 
             c.tiles[x][y] = t;

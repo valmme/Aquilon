@@ -8,7 +8,7 @@ enum TileType {
     ICE,
     SNOW,
     STONE,
-    ORE
+    IRON_ORE
 };
 
 struct Tile {

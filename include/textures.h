@@ -11,7 +11,7 @@ struct Textures {
     SDL_Texture* ice;
     SDL_Texture* snow;
     SDL_Texture* stone;
-    SDL_Texture* ore;
+    SDL_Texture* iron_ore;
 
     // ui
     SDL_Texture* slot;

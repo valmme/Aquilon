@@ -86,19 +86,19 @@ static SDL_Point ScreenToTile(const Camera& cam, float screen_x, float screen_y)
 static float MiningDurationFor(TileType type) {
     switch (type) {
         case STONE: return 0.80f;
-        case ORE:  return 1.10f;
+        case IRON_ORE:  return 1.10f;
         default:   return 0.0f;
     }
 }
 
 static bool IsMineable(TileType type) {
-    return type == STONE || type == ORE;
+    return type == STONE || type == IRON_ORE;
 }
 
 static const char* TileResourceName(TileType type) {
     switch (type) {
         case STONE: return "Stone";
-        case ORE:  return "Iron Ore";
+        case IRON_ORE:  return "Iron IRON_ORE";
         default:   return "Unknown";
     }
 }
@@ -107,8 +107,8 @@ static Item* MakeDropForTile(const Tile& tile, const Textures& tex) {
     switch (tile.type) {
         case STONE:
             return new Item{ItemType::STONE, "Stone", 1, tex.stone};
-        case ORE:
-            return new Item{ItemType::IRON_ORE, "Iron Ore", 1, tex.ore};
+        case IRON_ORE:
+            return new Item{ItemType::IRON_ORE, "Iron IRON_ORE", 1, tex.iron_ore};
         default:
             return nullptr;
     }
@@ -265,7 +265,7 @@ int main() {
 
         SDL_Texture* icon = nullptr;
         if (resource_panel_type == STONE) icon = tex.stone;
-        else if (resource_panel_type == ORE) icon = tex.ore;
+        else if (resource_panel_type == IRON_ORE) icon = tex.iron_ore;
 
         if (icon) {
             SDL_FRect icon_dst = {icon_bg.x + 2.0f, icon_bg.y + 2.0f, icon_bg.w - 4.0f, icon_bg.h - 4.0f};
@@ -286,7 +286,7 @@ int main() {
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
-        snprintf(line, sizeof(line), "Type: %s", resource_panel_type == ORE ? "Ore" : "Stone");
+        snprintf(line, sizeof(line), "Type: %s", resource_panel_type == IRON_ORE ? "IRON_ORE" : "Stone");
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
@@ -421,13 +421,13 @@ int main() {
         int player_tile_x = (int)player.player.x / TILE_SIZE;
         int player_tile_y = (int)player.player.y / TILE_SIZE;
 
-        std::size_t chunk_count_before = world.get_chunks().size();
+        std::size_t chunk_count_befIRON_ORE = world.get_chunks().size();
         world.update(player_tile_x, player_tile_y);
         std::size_t chunk_count_after = world.get_chunks().size();
-        if (chunk_count_after != chunk_count_before) {
+        if (chunk_count_after != chunk_count_befIRON_ORE) {
             Logger::Log("SYSTEM", Logger::Level::Debug,
                         "Chunk cache changed: %zu -> %zu around chunk (%d, %d).",
-                        chunk_count_before, chunk_count_after,
+                        chunk_count_befIRON_ORE, chunk_count_after,
                         player_tile_x / CHUNK_SIZE, player_tile_y / CHUNK_SIZE);
         }
         cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
@@ -481,7 +481,7 @@ int main() {
             }
         }
 
-        SDL_SetRenderDrawColor(renderer, 50, 130, 230, 255);
+        SDL_SetRenderDrawColor(renderer, 230, 245, 255, 255);
         SDL_RenderClear(renderer);
 
         for (auto& [key, chunk] : world.get_chunks()) {
@@ -496,13 +496,19 @@ int main() {
                     if (t.type == ICE) current = tex.ice;
                     else if (t.type == SNOW) current = tex.snow;
                     else if (t.type == STONE) current = tex.stone;
-                    else if (t.type == ORE)  current = tex.ore;
+                    else if (t.type == IRON_ORE) current = tex.iron_ore;
 
                     if (!current) continue;
 
-                    SDL_FRect dst = cam.WorldToScreenRect(world_x * TILE_SIZE, world_y * TILE_SIZE, (float)TILE_SIZE, (float)TILE_SIZE);
+                    SDL_FRect dst = cam.WorldToScreenRect(
+                        world_x * TILE_SIZE,
+                        world_y * TILE_SIZE,
+                        (float)TILE_SIZE,
+                        (float)TILE_SIZE
+                    );
 
-                    SDL_RenderTexture(renderer, current, NULL, &dst);
+                    float angle = (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
+                    SDL_RenderTextureRotated(renderer, current, nullptr, &dst, angle, nullptr, SDL_FLIP_NONE);
                 }
             }
         }
