@@ -4,14 +4,14 @@
 #include <cstring>
 
 static constexpr float SLOT_SIZE      = 25.0f;
-static constexpr float SLOT_SPACING   = 5.0f;
+static constexpr float SLOT_SPACING   = 0.0f;
 static constexpr int   INVENTORY_COLS = 10;
 static constexpr int   INVENTORY_ROWS = 9;
 
 static constexpr float INV_WIN_W = INVENTORY_COLS * SLOT_SIZE + (INVENTORY_COLS + 1) * SLOT_SPACING + SLOT_SPACING;
 static constexpr float INV_WIN_H = INVENTORY_ROWS * SLOT_SIZE + (INVENTORY_ROWS + 1) * SLOT_SPACING + SLOT_SIZE;
 
-Inventory::Inventory(GUIEngine& gui, TTF_Font* font) : gui(gui), font(font) {
+Inventory::Inventory(GUIEngine& gui, Textures tex, TTF_Font* font) : gui(gui), font(font), tex(tex) {
     for (int j = 0; j < INVENTORY_ROWS; j++) {
         for (int i = 0; i < INVENTORY_COLS; i++) {
             float x = SLOT_SPACING + i * (SLOT_SIZE + SLOT_SPACING);
@@ -50,7 +50,7 @@ void Inventory::open_window() {
         }
 
         for (const Slot& slot : slots) {
-            slot.draw(renderer, font);
+            slot.draw(renderer, tex, font);
         }
 
         if (font) {

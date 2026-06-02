@@ -7,10 +7,14 @@
 struct Textures {
     SDL_Texture* none;
 
+    // tiles
     SDL_Texture* ice;
     SDL_Texture* snow;
     SDL_Texture* stone;
     SDL_Texture* ore;
+
+    // ui
+    SDL_Texture* slot;
 };
 
 Textures load_textures(SDL_Renderer* renderer);

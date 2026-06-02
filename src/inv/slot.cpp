@@ -97,21 +97,17 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
         }
     }
 }
-
-void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
-    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 220);
-    SDL_RenderFillRect(renderer, &dest);
+void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
+    if (tex.slot) {
+        SDL_RenderTexture(renderer, tex.slot, nullptr, &dest);
+    } 
+    
+    else {
+        SDL_SetRenderDrawColor(renderer, 60, 60, 60, 220);
+        SDL_RenderFillRect(renderer, &dest);
+    }
 
     SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
-
-    SDL_FRect t = {dest.x, dest.y, dest.w, 2};
-    SDL_FRect b = {dest.x, dest.y + dest.h - 2, dest.w, 2};
-    SDL_FRect l = {dest.x, dest.y, 2, dest.h};
-    SDL_FRect r = {dest.x + dest.w - 2, dest.y, 2, dest.h};
-    SDL_RenderFillRect(renderer, &t);
-    SDL_RenderFillRect(renderer, &b);
-    SDL_RenderFillRect(renderer, &l);
-    SDL_RenderFillRect(renderer, &r);
 
     if (item) {
         item->draw(renderer, SLOT_SIZE);
@@ -123,8 +119,8 @@ void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
             SDL_Color white = {255, 255, 255, 255};
             SDL_Surface* surf = TTF_RenderText_Blended(font, buf, strlen(buf), white);
             if (surf) {
-                SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-                if (tex) {
+                SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, surf);
+                if (textTex) {
                     float tw = (float)surf->w;
                     float th = (float)surf->h;
 
@@ -145,8 +141,8 @@ void Slot::draw(SDL_Renderer* renderer, TTF_Font* font) const {
                         tw * scale,
                         th * scale
                     };
-                    SDL_RenderTexture(renderer, tex, nullptr, &tdst);
-                    SDL_DestroyTexture(tex);
+                    SDL_RenderTexture(renderer, textTex, nullptr, &tdst);
+                    SDL_DestroyTexture(textTex);
                 }
                 SDL_DestroySurface(surf);
             }

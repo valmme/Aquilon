@@ -222,7 +222,7 @@ int main() {
     World world;
     Player player;
     Camera cam;
-    Inventory inv(gui_engine, debug_font.get());
+    Inventory inv(gui_engine, tex, debug_font.get());
     inv.pick(new Item{ItemType::UNDEFINED, "Undefined", 67, tex.none});
     Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
 

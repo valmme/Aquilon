@@ -29,10 +29,14 @@ Textures load_textures(SDL_Renderer* renderer) {
 
     SDL_SetTextureScaleMode(t.none, SDL_SCALEMODE_NEAREST);
 
-    t.ice  = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
-    t.snow = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
+    // tiles
+    t.ice   = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
+    t.snow  = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
     t.stone = find_texture(renderer, t.none, "stone", "resources/textures/stone.png");
-    t.ore  = find_texture(renderer, t.none, "ore",  "resources/textures/stone.png");
+    t.ore   = find_texture(renderer, t.none, "ore",  "resources/textures/stone.png");
+
+    // ui
+    t.slot  = find_texture(renderer, t.none, "slot", "resources/textures/slot.png");
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
 

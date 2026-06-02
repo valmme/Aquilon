@@ -14,8 +14,10 @@ public:
     Item* cursor_item = nullptr;
     bool open = false;
 
-    Inventory(GUIEngine& gui, TTF_Font* font);
+    Inventory(GUIEngine& gui, Textures tex, TTF_Font* font);
     ~Inventory();
+
+    Textures tex;
 
     void handle_event(const SDL_Event& e);
     void update(float mx, float my);
