@@ -6,6 +6,14 @@
 #define STB_PERLIN_IMPLEMENTATION
 #include "stb_perlin.h"
 
+#define WORLD_STONE_THRESHOLD 0.82f
+#define WORLD_IRON_THRESHOLD  0.65f
+#define WORLD_ICE_THRESHOLD   0.55f
+
+#define WORLD_STONE_YIELD_MAX 9.0f
+#define WORLD_IRON_YIELD_MAX  9.0f
+#define WORLD_ICE_YIELD       1
+
 World::World() {}
 
 Chunk& World::get_or_create_chunk(int cx, int cy) {
@@ -32,19 +40,17 @@ Chunk World::generate_chunk(int cx, int cy) {
 
             Tile t = {SNOW, true, 1};
 
-            if (n > 0.82f) {
+            if (n > WORLD_STONE_THRESHOLD) {
                 t.type = STONE;
-                t.yield = 1 + (int)((n - 0.82f) / 0.18f * 9.0f);
+                t.yield = 1 + (int)((n - WORLD_STONE_THRESHOLD) / (1.0f - WORLD_STONE_THRESHOLD) * WORLD_STONE_YIELD_MAX);
             }
-
-            else if (detail > 0.65f) {
+            else if (detail > WORLD_IRON_THRESHOLD) {
                 t.type = IRON_ORE;
-                t.yield = 1 + (int)((detail - 0.65f) / 0.35f * 9.0f);
+                t.yield = 1 + (int)((detail - WORLD_IRON_THRESHOLD) / (1.0f - WORLD_IRON_THRESHOLD) * WORLD_IRON_YIELD_MAX);
             }
-
-            else if (n < 0.55f) {
+            else if (n < WORLD_ICE_THRESHOLD) {
                 t.type = ICE;
-                t.yield = 1;
+                t.yield = WORLD_ICE_YIELD;
             }
 
             c.tiles[x][y] = t;

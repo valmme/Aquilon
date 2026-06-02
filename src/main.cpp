@@ -471,10 +471,22 @@ int main() {
                 mining.progress += delta_time;
 
                 if (mining.progress >= mining.duration) {
-                    world.set_tile(mining.tile_x, mining.tile_y, Tile{EMPTY, false, 0});
-                    if (Item* drop = MakeDropForTile(mined_tile, tex)) {
-                        inv.pick(drop);
+                    Tile current = world.get_tile(mining.tile_x, mining.tile_y);
+
+                    if (current.yield > 0) {
+                        current.yield -= 1;
+
+                        if (Item* drop = MakeDropForTile(mined_tile, tex)) {
+                            inv.pick(drop);
+                        }
+
+                        if (current.yield <= 0) {
+                            current = Tile{EMPTY, false, 0};
+                        }
+
+                        world.set_tile(mining.tile_x, mining.tile_y, current);
                     }
+
                     mining.active = false;
                     mining.progress = 0.0f;
                 }
