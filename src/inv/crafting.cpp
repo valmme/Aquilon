@@ -78,8 +78,45 @@ void CraftingSystem::select_by_mouse(float mx, float my, const SDL_FRect& panel_
 
 void CraftingSystem::update(float, float) {}
 
-void CraftingSystem::handle_event(const SDL_Event& e) {
-    (void)e;
+void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect) {
+    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
+
+    float mx = (float)e.button.x;
+    float my = (float)e.button.y;
+
+    float list_x = panel_rect.x + PANEL_PAD;
+    float list_y = panel_rect.y + PANEL_PAD + 18.0f;
+    float list_w = panel_rect.w * 0.42f;
+
+    for (int i = 0; i < (int)recipes.size(); ++i) {
+        SDL_FRect row = {
+            list_x,
+            list_y + i * LIST_ROW_H,
+            list_w,
+            LIST_ROW_H - 3.0f
+        };
+
+        if (mx >= row.x && mx <= row.x + row.w && my >= row.y && my <= row.y + row.h) {
+            selected = i;
+            return;
+        }
+    }
+
+    if (selected < 0 || selected >= (int)recipes.size()) return;
+
+    float detail_x = panel_rect.x + list_w + PANEL_PAD * 2.0f;
+    float detail_w = panel_rect.w - (detail_x - panel_rect.x) - PANEL_PAD;
+    SDL_FRect detail = {
+        detail_x,
+        panel_rect.y + PANEL_PAD + 18.0f,
+        detail_w,
+        panel_rect.h - PANEL_PAD * 2.0f - 18.0f
+    };
+    SDL_FRect button = { detail.x + 8.0f, detail.y + detail.h - 34.0f, 92.0f, 24.0f };
+
+    if (mx >= button.x && mx <= button.x + button.w && my >= button.y && my <= button.y + button.h) {
+        craft_selected(inv);
+    }
 }
 
 static void draw_text(SDL_Renderer* renderer, TTF_Font* font, float x, float y, const char* text, SDL_Color color) {

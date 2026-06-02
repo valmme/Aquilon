@@ -35,7 +35,7 @@ public:
     bool craft_selected(Inventory& inv);
 
     void update(float mx, float my);
-    void handle_event(const SDL_Event& e);
+    void handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect);
     void draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rect, const Inventory& inv) const;
     void select_by_mouse(float mx, float my, const SDL_FRect& panel_rect);
 

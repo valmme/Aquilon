@@ -105,6 +105,10 @@ void Inventory::open_window() {
             content_rect.h
         };
 
+        if (crafting) {
+            crafting->draw_panel(renderer, craft_rect, *this);
+        }
+
         SDL_SetRenderClipRect(renderer, nullptr);
     });
 
@@ -145,7 +149,7 @@ void Inventory::handle_event(const SDL_Event& e) {
     }
 
     if (crafting) {
-        crafting->handle_event(e);
+        crafting->handle_event(e, *this, craft_rect);
     }
 }
 
