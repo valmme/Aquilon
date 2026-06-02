@@ -57,7 +57,7 @@ bool ParseBool(const std::string& value, bool& enabled) {
 
 std::string AppConfigToText(const AppConfig& config) {
     std::ostringstream out;
-    out << "# Aquilon configuration\n\n";
+    out << "# Aquilon auto-generated configuration\n\n";
     out << "# Renderer backend options: auto, software, gpu, vulkan, opengl, direct3d11, direct3d12, metal\n";
     out << "renderer = " << (config.renderer_backend.empty() ? "auto" : config.renderer_backend) << "\n\n";
     out << "# Logging level: trace, debug, info, warn, error, fatal\n";
