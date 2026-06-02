@@ -13,6 +13,8 @@ struct Textures {
     SDL_Texture* stone;
     SDL_Texture* iron_ore;
 
+    SDL_Texture* furnace;
+
     // ui
     SDL_Texture* slot;
 };

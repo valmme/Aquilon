@@ -2,7 +2,7 @@
 #include "vmath.h"
 #include <cstring>
 
-static constexpr float SLOT_SIZE = 25.0f;
+static constexpr float SLOT_SIZE = 35.0f;
 static constexpr float AMOUNT_FONT_SIZE = 8.0f;
 
 Slot::Slot(float x, float y) {

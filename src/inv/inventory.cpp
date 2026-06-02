@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
-static constexpr float SLOT_SIZE      = 25.0f;
+static constexpr float SLOT_SIZE      = 35.0f;
 static constexpr float SLOT_SPACING   = 0.0f;
 static constexpr int   INVENTORY_COLS = 10;
 static constexpr int   INVENTORY_ROWS = 9;
@@ -137,8 +137,8 @@ void Inventory::handle_event(const SDL_Event& e) {
 
 void Inventory::update(float mx, float my) {
     if (cursor_item) {
-        cursor_item->dest.w = 30.0f;
-        cursor_item->dest.h = 30.0f;
+        cursor_item->dest.w = SLOT_SIZE;
+        cursor_item->dest.h = SLOT_SIZE;
         cursor_item->dest.x = mx - cursor_item->dest.w * 0.5f;
         cursor_item->dest.y = my - cursor_item->dest.h * 0.5f;
     }
@@ -230,4 +230,24 @@ int Inventory::get_amount(ItemType type) const {
         if (slot.item && slot.item->type == type) total += slot.item->amount;
 
     return total;
+}
+
+bool Inventory::is_dragging_placeable() const {
+    return cursor_item && cursor_item->can_place;
+}
+
+
+const Item* Inventory::get_dragged_item() const {
+    return cursor_item;
+}
+
+Item* Inventory::release_cursor_item() {
+    Item* out = cursor_item;
+    cursor_item = nullptr;
+    return out;
+}
+
+void Inventory::set_cursor_item(Item* item) {
+    delete cursor_item;
+    cursor_item = item;
 }

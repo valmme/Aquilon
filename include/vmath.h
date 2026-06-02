@@ -35,6 +35,9 @@ static inline float vec2distance(vec2 a, vec2 b) {
     return std::sqrt(dx * dx + dy * dy);
 }
 
+static inline vec2 vec2zero() { return {0, 0}; }
+static inline vec3 vec3zero() { return {0, 0, 0}; }
+
 static inline vec3 vec3add(vec3 a, vec3 b) { return {a.x + b.x, a.y + b.y, a.z + b.z}; }
 static inline vec3 vec3sub(vec3 a, vec3 b) { return {a.x - b.x, a.y - b.y, a.z - b.z}; }
 static inline vec3 vec3mul(vec3 a, float v) { return {a.x * v, a.y * v, a.z * v}; }

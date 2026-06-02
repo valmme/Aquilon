@@ -27,6 +27,23 @@ public:
     void remove(ItemType type, int amount);
     int get_amount(ItemType type) const;
 
+    bool is_dragging_placeable() const;
+    const Item* get_dragged_item() const;
+
+    Item* release_cursor_item();
+    void set_cursor_item(Item* item);
+
+    bool consume_cursor_item_one() {
+        if (!cursor_item) return false;
+
+        cursor_item->amount -= 1;
+        if (cursor_item->amount <= 0) {
+            delete cursor_item;
+            cursor_item = nullptr;
+        }
+        return true;
+    }
+
 private:
     GUIEngine& gui;
     GUIWindow* window = nullptr;
@@ -35,5 +52,7 @@ private:
     void open_window();
     void close_window();
 };
+
+
 
 #endif // AQUILON_INVENTORY_H

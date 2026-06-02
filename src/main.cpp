@@ -74,6 +74,34 @@ struct MiningState {
     float progress = 0.0f;
 };
 
+struct PlacedObject {
+    ItemType type = ItemType::NONE;
+    SDL_Texture* texture = nullptr;
+    int x = 0;
+    int y = 0;
+    vec2 size = {1, 1};
+};
+
+std::vector<PlacedObject> placed_objects;
+
+static bool CanPlaceAt(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size) {
+    for (const PlacedObject& obj : placed_objects) {
+        int ax1 = obj.x;
+        int ay1 = obj.y;
+        int ax2 = obj.x + (int)obj.size.x - 1;
+        int ay2 = obj.y + (int)obj.size.y - 1;
+
+        int bx1 = x;
+        int by1 = y;
+        int bx2 = x + (int)size.x - 1;
+        int by2 = y + (int)size.y - 1;
+
+        bool overlap = !(bx2 < ax1 || bx1 > ax2 || by2 < ay1 || by1 > ay2);
+        if (overlap) return false;
+    }
+    return true;
+}
+
 static SDL_Point ScreenToTile(const Camera& cam, float screen_x, float screen_y) {
     const float world_x = cam.x + screen_x / cam.zoom;
     const float world_y = cam.y + screen_y / cam.zoom;
@@ -146,6 +174,28 @@ static void DrawMiningProgressBar(SDL_Renderer* renderer, int win_w, int win_h, 
         SDL_FRect fill = {bar_x + 1.0f, bar_y + 1.0f, fill_w, bar_h - 2.0f};
         SDL_RenderFillRect(renderer, &fill);
     }
+}
+
+static void DrawPlacementPreviewTexture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) {
+    if (!renderer || !item || !item->can_place || !item->texture) return;
+
+    int tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
+    int tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
+
+    float world_x = tile_x * TILE_SIZE;
+    float world_y = tile_y * TILE_SIZE;
+    float world_w = item->size.x * TILE_SIZE;
+    float world_h = item->size.y * TILE_SIZE;
+
+    SDL_FRect dst = cam.WorldToScreenRect(world_x, world_y, world_w, world_h);
+
+    SDL_SetTextureBlendMode(item->texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureAlphaMod(item->texture, can_place_here ? 120 : 80);
+    SDL_SetTextureColorMod(item->texture, can_place_here ? 90 : 255, can_place_here ? 255 : 80, can_place_here ? 120 : 80);
+    SDL_RenderTexture(renderer, item->texture, nullptr, &dst);
+
+    SDL_SetTextureAlphaMod(item->texture, 255);
+    SDL_SetTextureColorMod(item->texture, 255, 255, 255);
 }
 
 int main() {
@@ -223,7 +273,9 @@ int main() {
     Player player;
     Camera cam;
     Inventory inv(gui_engine, tex, debug_font.get());
-    inv.pick(new Item{ItemType::UNDEFINED, "Undefined", 67, tex.none});
+
+    inv.pick(new Item{ItemType::FURNACE, "Furnace", 67, tex.furnace, true, {2, 2}});
+
     Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
 
     int win_w = 800, win_h = 600;
@@ -292,6 +344,7 @@ int main() {
 
         DrawDebugText(renderer, debug_font.get(), left, y, "Hold RMB to mine", accent_color);
     });
+
     main_window->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Color panel_fill = {24, 30, 34, 255};
         SDL_SetRenderDrawColor(renderer, panel_fill.r, panel_fill.g, panel_fill.b, panel_fill.a);
@@ -365,8 +418,9 @@ int main() {
         SDL_SetWindowTitle(window, title);
 
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_EVENT_QUIT)
+            if (e.type == SDL_EVENT_QUIT) {
                 running = false;
+            }
 
             bool gui_consumed = gui_engine.handle_event(e);
             main_window = gui_engine.get_window();
@@ -378,13 +432,10 @@ int main() {
             }
 
             if (!gui_consumed && e.type == SDL_EVENT_MOUSE_WHEEL) {
-                float prev_zoom = cam.zoom;
                 float factor = powf(1.1f, (float)e.wheel.y);
-                float new_zoom = prev_zoom * factor;
-                if (new_zoom < 0.25f) new_zoom = 0.25f;
-                if (new_zoom > 4.0f) new_zoom = 4.0f;
-
-                cam.zoom = new_zoom;
+                cam.zoom *= factor;
+                if (cam.zoom < 0.25f) cam.zoom = 0.25f;
+                if (cam.zoom > 4.0f) cam.zoom = 4.0f;
             }
 
             if (!gui_consumed && e.type == SDL_EVENT_KEY_DOWN) {
@@ -409,6 +460,29 @@ int main() {
                 right_hold_blocked = false;
             }
 
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) {
+                float mouse_x = 0.0f, mouse_y = 0.0f;
+                SDL_GetMouseState(&mouse_x, &mouse_y);
+
+                Item* dragged = inv.cursor_item;
+                if (dragged && dragged->can_place) {
+                    int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
+                    int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
+
+                    if (CanPlaceAt(placed_objects, place_tile_x, place_tile_y, dragged->size)) {
+                        PlacedObject obj;
+                        obj.type = dragged->type;
+                        obj.texture = dragged->texture;
+                        obj.x = place_tile_x;
+                        obj.y = place_tile_y;
+                        obj.size = dragged->size;
+
+                        placed_objects.push_back(obj);
+                        inv.consume_cursor_item_one();
+                    }
+                }
+            }
+
             if (!gui_consumed) {
                 player.handle_input(e);
             }
@@ -421,21 +495,22 @@ int main() {
         int player_tile_x = (int)player.player.x / TILE_SIZE;
         int player_tile_y = (int)player.player.y / TILE_SIZE;
 
-        std::size_t chunk_count_befIRON_ORE = world.get_chunks().size();
+        std::size_t chunk_count_before = world.get_chunks().size();
         world.update(player_tile_x, player_tile_y);
         std::size_t chunk_count_after = world.get_chunks().size();
-        if (chunk_count_after != chunk_count_befIRON_ORE) {
+        if (chunk_count_after != chunk_count_before) {
             Logger::Log("SYSTEM", Logger::Level::Debug,
                         "Chunk cache changed: %zu -> %zu around chunk (%d, %d).",
-                        chunk_count_befIRON_ORE, chunk_count_after,
+                        chunk_count_before, chunk_count_after,
                         player_tile_x / CHUNK_SIZE, player_tile_y / CHUNK_SIZE);
         }
         cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
 
-        float mx, my;
-        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mx, &my);
-        inv.update(mx, my);
-        SDL_Point hovered_tile = ScreenToTile(cam, mx, my);
+        float mouse_x = 0.0f, mouse_y = 0.0f;
+        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+        inv.update(mouse_x, mouse_y);
+
+        SDL_Point hovered_tile = ScreenToTile(cam, mouse_x, mouse_y);
         Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
 
         resource_panel_visible = IsMineable(hovered_tile_data.type);
@@ -464,7 +539,8 @@ int main() {
         if (mining.active) {
             Tile mined_tile = world.get_tile(mining.tile_x, mining.tile_y);
 
-            if (hovered_tile.x != mining.tile_x || hovered_tile.y != mining.tile_y || mined_tile.type != mining.tile_type || !IsMineable(mined_tile.type)) {
+            if (hovered_tile.x != mining.tile_x || hovered_tile.y != mining.tile_y ||
+                mined_tile.type != mining.tile_type || !IsMineable(mined_tile.type)) {
                 mining.active = false;
                 mining.progress = 0.0f;
             } else {
@@ -525,11 +601,33 @@ int main() {
             }
         }
 
+        for (const PlacedObject& obj : placed_objects) {
+            if (!obj.texture) continue;
+
+            SDL_FRect dst = cam.WorldToScreenRect(
+                obj.x * TILE_SIZE,
+                obj.y * TILE_SIZE,
+                obj.size.x * TILE_SIZE,
+                obj.size.y * TILE_SIZE
+            );
+
+            SDL_RenderTexture(renderer, obj.texture, nullptr, &dst);
+        }
+
         player.render(renderer, cam);
         gui_engine.render_all();
         inv.draw(renderer, debug_font.get());
-        DrawMiningProgressBar(renderer, win_w, win_h, mining);
 
+        const Item* dragged = inv.cursor_item;
+        if (dragged && dragged->can_place) {
+            int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
+            int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
+
+            bool can_place_here = CanPlaceAt(placed_objects, place_tile_x, place_tile_y, dragged->size);
+            DrawPlacementPreviewTexture(renderer, cam, dragged, mouse_x, mouse_y, can_place_here);
+        }
+
+        DrawMiningProgressBar(renderer, win_w, win_h, mining);
         SDL_RenderPresent(renderer);
     }
 

@@ -30,10 +30,11 @@ Textures load_textures(SDL_Renderer* renderer) {
     SDL_SetTextureScaleMode(t.none, SDL_SCALEMODE_NEAREST);
 
     // tiles
-    t.ice      = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
+    t.ice      = find_texture(renderer, t.none, "ice", "resources/textures/ice.png");
     t.snow     = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
     t.stone    = find_texture(renderer, t.none, "stone", "resources/textures/stone.png");
-    t.iron_ore = find_texture(renderer, t.none, "iron_ore",  "resources/textures/iron_ore.png");
+    t.iron_ore = find_texture(renderer, t.none, "iron_ore", "resources/textures/iron_ore.png");
+    t.furnace  = find_texture(renderer, t.none, "furnace", "resources/textures/furnace.png");
 
     // ui
     t.slot  = find_texture(renderer, t.none, "slot", "resources/textures/slot.png");
