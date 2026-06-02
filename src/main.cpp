@@ -98,7 +98,7 @@ static bool IsMineable(TileType type) {
 static const char* TileResourceName(TileType type) {
     switch (type) {
         case STONE: return "Stone";
-        case IRON_ORE:  return "Iron IRON_ORE";
+        case IRON_ORE:  return "Iron Ore";
         default:   return "Unknown";
     }
 }
@@ -108,7 +108,7 @@ static Item* MakeDropForTile(const Tile& tile, const Textures& tex) {
         case STONE:
             return new Item{ItemType::STONE, "Stone", 1, tex.stone};
         case IRON_ORE:
-            return new Item{ItemType::IRON_ORE, "Iron IRON_ORE", 1, tex.iron_ore};
+            return new Item{ItemType::IRON_ORE, "Iron Ore", 1, tex.iron_ore};
         default:
             return nullptr;
     }
