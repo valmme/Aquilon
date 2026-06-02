@@ -33,7 +33,7 @@ Textures load_textures(SDL_Renderer* renderer) {
     t.ice      = find_texture(renderer, t.none, "ice",  "resources/textures/ice.png");
     t.snow     = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
     t.stone    = find_texture(renderer, t.none, "stone", "resources/textures/stone.png");
-    t.iron_ore = find_texture(renderer, t.none, "ore",  "resources/textures/stone.png");
+    t.iron_ore = find_texture(renderer, t.none, "iron_ore",  "resources/textures/iron_ore.png");
 
     // ui
     t.slot  = find_texture(renderer, t.none, "slot", "resources/textures/slot.png");
