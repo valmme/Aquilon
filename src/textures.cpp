@@ -2,18 +2,28 @@
 #include "logger.h"
 #include <cstdio>
 
-static SDL_Texture* find_texture(SDL_Renderer* renderer, SDL_Texture* fallback, const char* label, const char* file) {
+static SDL_Texture* load_texture(SDL_Renderer* renderer, const char* label, const char* file) {
     SDL_Texture* tex = IMG_LoadTexture(renderer, file);
 
     if (!tex) {
         Logger::Log("APPLICATION", Logger::Level::Error,
                     "Failed to load texture '%s' from '%s': %s",
                     label, file, SDL_GetError());
-        return fallback;
+        return nullptr;
     }
 
     SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
-    return tex;
+    if (tex) {
+        return tex;
+    }
+
+    SDL_Texture* fallback = load_texture(renderer, "none", "resources/textures/none.png");
+    if (!fallback) {
+        Logger::Log("APPLICATION", Logger::Level::Fatal,
+                    "Fallback texture could not be created for '%s'.",
+                    label);
+    }
+    return fallback;
 }
 
 Textures load_textures(SDL_Renderer* renderer) {
@@ -27,17 +37,15 @@ Textures load_textures(SDL_Renderer* renderer) {
                     SDL_GetError());
     }
 
-    SDL_SetTextureScaleMode(t.none, SDL_SCALEMODE_NEAREST);
-
     // tiles
-    t.ice      = find_texture(renderer, t.none, "ice", "resources/textures/ice.png");
-    t.snow     = find_texture(renderer, t.none, "snow", "resources/textures/snow.png");
-    t.stone    = find_texture(renderer, t.none, "stone", "resources/textures/stone.png");
-    t.iron_ore = find_texture(renderer, t.none, "iron_ore", "resources/textures/iron_ore.png");
-    t.furnace  = find_texture(renderer, t.none, "furnace", "resources/textures/furnace.png");
+    t.ice      = load_texture(renderer, "ice", "resources/textures/ice.png");
+    t.snow     = load_texture(renderer, "snow", "resources/textures/snow.png");
+    t.stone    = load_texture(renderer, "stone", "resources/textures/stone.png");
+    t.iron_ore = load_texture(renderer, "iron_ore", "resources/textures/iron_ore.png");
+    t.furnace  = load_texture(renderer, "furnace", "resources/textures/furnace.png");
 
     // ui
-    t.slot  = find_texture(renderer, t.none, "slot", "resources/textures/slot.png");
+    t.slot  = load_texture(renderer, "slot", "resources/textures/slot.png");
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
 
@@ -45,29 +53,13 @@ Textures load_textures(SDL_Renderer* renderer) {
 }
 
 void free_textures(Textures& t) {
-    SDL_Texture* destroyed[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
-    int destroyed_count = 0;
-
-    auto destroy_unique = [&](SDL_Texture* texture) {
-        if (!texture) {
-            return;
-        }
-
-        for (int i = 0; i < destroyed_count; ++i) {
-            if (destroyed[i] == texture) {
-                return;
-            }
-        }
-
-        SDL_DestroyTexture(texture);
-        destroyed[destroyed_count++] = texture;
-    };
-
-    destroy_unique(t.ice);
-    destroy_unique(t.snow);
-    destroy_unique(t.stone);
-    destroy_unique(t.iron_ore);
-    destroy_unique(t.none);
+    if (t.ice) SDL_DestroyTexture(t.ice);
+    if (t.snow) SDL_DestroyTexture(t.snow);
+    if (t.stone) SDL_DestroyTexture(t.stone);
+    if (t.iron_ore) SDL_DestroyTexture(t.iron_ore);
+    if (t.furnace) SDL_DestroyTexture(t.furnace);
+    if (t.slot) SDL_DestroyTexture(t.slot);
+    if (t.none) SDL_DestroyTexture(t.none);
 
     t = {};
 }

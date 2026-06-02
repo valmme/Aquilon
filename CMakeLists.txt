@@ -52,6 +52,10 @@ add_executable(Aquilon ${SOURCES})
 target_include_directories(Aquilon PRIVATE include)
 target_link_libraries(Aquilon PRIVATE SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf)
 
+if(WIN32)
+    target_link_libraries(Aquilon PRIVATE Ws2_32)
+endif()
+
 add_custom_command(TARGET Aquilon POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/resources

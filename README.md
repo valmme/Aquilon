@@ -10,6 +10,7 @@ Aquilon is a small SDL3-based 2D sandbox game prototype with procedural terrain,
 - GUI window with close / drag behavior
 - Colored console logging and file logging to `aquilon.log`
 - Runtime renderer backend, log level, and VSync selection through `aquilon.cfg`
+- New C-style networking module scaffolded for future multiplayer work
 
 ## Requirements
 
@@ -83,3 +84,4 @@ Accepted renderer values include `auto`, `software`, `gpu`, `vulkan`, `opengl`, 
 
 - If a texture fails to load, the game logs the exact file and SDL error.
 - The world keeps chunks loaded around the player and unloads distant ones to limit memory growth.
+- Networking is currently transport-level only: connect, host, send framed packets, and poll events.
