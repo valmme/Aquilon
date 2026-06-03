@@ -299,7 +299,7 @@ int main() {
 
     int initial_player_tile_x = (int)player.player.x / TILE_SIZE;
     int initial_player_tile_y = (int)player.player.y / TILE_SIZE;
-    world.update(initial_player_tile_x, initial_player_tile_y);
+    world.update(initial_player_tile_x, initial_player_tile_y, config.chunk_distance);
 
     float fps = 0.0f;
     MiningState mining;
@@ -519,7 +519,7 @@ int main() {
         int player_tile_y = (int)player.player.y / TILE_SIZE;
 
         std::size_t chunk_count_before = world.get_chunks().size();
-        world.update(player_tile_x, player_tile_y);
+        world.update(player_tile_x, player_tile_y, config.chunk_distance);
         std::size_t chunk_count_after = world.get_chunks().size();
         if (chunk_count_after != chunk_count_before) {
             Logger::Log("SYSTEM", Logger::Level::Debug,

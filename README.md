@@ -73,6 +73,7 @@ log_level = trace
 vsync = on
 window_width = 1280
 window_height = 720
+chunk_distance = 4
 move_up = W, Up
 move_down = S, Down
 move_left = A, Left
@@ -95,4 +96,5 @@ Key bindings use SDL key names and can list multiple keys separated by commas.
 
 - If a texture fails to load, the game logs the exact file and SDL error.
 - The world keeps chunks loaded around the player and unloads distant ones to limit memory growth.
+- `chunk_distance` controls how many chunks are kept loaded in each direction around the player.
 - Networking is currently transport-level only: connect, host, send framed packets, and poll events.

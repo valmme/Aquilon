@@ -29,6 +29,7 @@ struct AppConfig {
     bool vsync_enabled = true;
     int window_width = 800;
     int window_height = 600;
+    int chunk_distance = 4;
     InputConfig input = [] {
         InputConfig input;
         input.move_up.keys = { SDLK_W, SDLK_UP };

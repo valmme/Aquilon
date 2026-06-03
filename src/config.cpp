@@ -152,6 +152,8 @@ std::string AppConfigToText(const AppConfig& config) {
     out << "\n# Window size\n";
     out << "window_width = " << config.window_width << "\n";
     out << "window_height = " << config.window_height << "\n\n";
+    out << "# Chunk streaming distance in chunks around the player\n";
+    out << "chunk_distance = " << config.chunk_distance << "\n\n";
     out << "# Input bindings use SDL key names separated by commas.\n";
     WriteKeyBind(out, "move_up", config.input.move_up);
     WriteKeyBind(out, "move_down", config.input.move_down);
@@ -169,6 +171,7 @@ bool WriteDefaultConfig(const std::string& path) {
     defaults.language = "en";
     defaults.window_width = 800;
     defaults.window_height = 600;
+    defaults.chunk_distance = 4;
     defaults.input.move_up.keys = { SDLK_W, SDLK_UP };
     defaults.input.move_down.keys = { SDLK_S, SDLK_DOWN };
     defaults.input.move_left.keys = { SDLK_A, SDLK_LEFT };
@@ -283,6 +286,18 @@ bool LoadAppConfig(const std::string& path, AppConfig& config) {
                             value.c_str(), line_number, path.c_str());
             } else {
                 config.window_height = parsed;
+            }
+            continue;
+        }
+
+        if (key == "chunk_distance" || key == "chunk_radius" || key == "load_radius") {
+            int parsed = config.chunk_distance;
+            if (!ParseInt(value, parsed) || parsed < 0) {
+                Logger::Log("SYSTEM", Logger::Level::Warn,
+                            "Unknown chunk distance '%s' at line %d in '%s'.",
+                            value.c_str(), line_number, path.c_str());
+            } else {
+                config.chunk_distance = parsed;
             }
             continue;
         }
