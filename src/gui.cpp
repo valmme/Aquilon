@@ -1,4 +1,5 @@
 #include "gui.h"
+#include "textrenderer.h"
 #include "logger.h"
 #include <cmath>
 
@@ -9,59 +10,6 @@ static constexpr SDL_Color GUI_TITLE_TEXT_COLOR = {238, 241, 245, 255};
 static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {12, 14, 18, 220};
 static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {170, 178, 188, 255};
 static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {234, 238, 242, 255};
-
-static bool RenderShadowedText(SDL_Renderer* renderer,
-                               TTF_Font* font,
-                               const std::string& text,
-                               float x,
-                               float y,
-                               const SDL_Color& fill_color,
-                               const SDL_Color& shadow_color,
-                               SDL_FRect& out_dst) {
-    if (!renderer || !font || text.empty()) {
-        return false;
-    }
-
-    const float text_x = std::floor(x);
-    const float text_y = std::floor(y);
-    SDL_Surface* shadow_surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), shadow_color);
-    if (!shadow_surface) {
-        return false;
-    }
-
-    SDL_Texture* shadow_texture = SDL_CreateTextureFromSurface(renderer, shadow_surface);
-    if (!shadow_texture) {
-        SDL_DestroySurface(shadow_surface);
-        return false;
-    }
-
-    SDL_Surface* text_surface = TTF_RenderText_Blended(font, text.c_str(), text.size(), fill_color);
-    if (!text_surface) {
-        SDL_DestroyTexture(shadow_texture);
-        SDL_DestroySurface(shadow_surface);
-        return false;
-    }
-
-    SDL_Texture* text_texture = SDL_CreateTextureFromSurface(renderer, text_surface);
-    if (!text_texture) {
-        SDL_DestroySurface(text_surface);
-        SDL_DestroyTexture(shadow_texture);
-        SDL_DestroySurface(shadow_surface);
-        return false;
-    }
-
-    out_dst = {text_x, text_y, (float)text_surface->w, (float)text_surface->h};
-
-    SDL_FRect shadow_dst = {text_x + 1.0f, text_y + 1.0f, (float)shadow_surface->w, (float)shadow_surface->h};
-    SDL_RenderTexture(renderer, shadow_texture, nullptr, &shadow_dst);
-    SDL_RenderTexture(renderer, text_texture, nullptr, &out_dst);
-
-    SDL_DestroyTexture(text_texture);
-    SDL_DestroySurface(text_surface);
-    SDL_DestroyTexture(shadow_texture);
-    SDL_DestroySurface(shadow_surface);
-    return true;
-}
 
 GUIWindow::GUIWindow(float x, float y, float width, float height, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
     : position({x, y}), size({width, height}), title(title),
@@ -250,22 +198,18 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
 
     if (!title_font) return;
 
-    SDL_Surface* measure_surface = TTF_RenderText_Solid(title_font, title.c_str(), title.size(), GUI_TITLE_TEXT_COLOR);
-    if (!measure_surface) return;
-
-    float text_y = std::floor(position.y + border_width + (title_bar_height - (float)measure_surface->h) * 0.5f);
+    float text_y = std::floor(position.y + border_width + (title_bar_height - (float)TTF_GetFontHeight(title_font)) * 0.5f);
     float text_x = std::floor(position.x + border_width + padding);
-    SDL_DestroySurface(measure_surface);
 
     SDL_FRect title_dst = {0, 0, 0, 0};
-    if (!RenderShadowedText(renderer,
-                            title_font,
-                            title,
-                            text_x,
-                            text_y,
-                            GUI_TITLE_TEXT_COLOR,
-                            GUI_TITLE_SHADOW_COLOR,
-                            title_dst)) {
+    if (!TextRenderer::DrawTextShadow(renderer,
+                                      title_font,
+                                      text_x,
+                                      text_y,
+                                      title,
+                                      GUI_TITLE_TEXT_COLOR,
+                                      GUI_TITLE_SHADOW_COLOR,
+                                      &title_dst)) {
         return;
     }
 }

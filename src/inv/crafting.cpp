@@ -1,7 +1,7 @@
 #include "inv/crafting.h"
 #include "inv/inventory.h"
+#include "textrenderer.h"
 #include <cstdio>
-#include <cstring>
 
 static constexpr float PANEL_PAD = 8.0f;
 static constexpr float LIST_ROW_H = 34.0f;
@@ -119,25 +119,6 @@ void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_
     }
 }
 
-static void draw_text(SDL_Renderer* renderer, TTF_Font* font, float x, float y, const char* text, SDL_Color color) {
-    if (!renderer || !font || !text || !*text) return;
-
-    SDL_Surface* surf = TTF_RenderText_Blended(font, text, std::strlen(text), color);
-    if (!surf) return;
-
-    SDL_Texture* tx = SDL_CreateTextureFromSurface(renderer, surf);
-    if (!tx) {
-        SDL_DestroySurface(surf);
-        return;
-    }
-
-    SDL_FRect dst = { x, y, (float)surf->w, (float)surf->h };
-    SDL_RenderTexture(renderer, tx, nullptr, &dst);
-
-    SDL_DestroyTexture(tx);
-    SDL_DestroySurface(surf);
-}
-
 void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rect, const Inventory& inv) const {
     if (!renderer) return;
 
@@ -152,10 +133,10 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     SDL_Color bad = {230, 100, 100, 255};
     SDL_Color yellow = {220, 200, 90, 255};
 
-    draw_text(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 4.0f, "Crafting", white);
+    TextRenderer::DrawText(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 4.0f, "Crafting", white);
 
     if (recipes.empty()) {
-        draw_text(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 28.0f, "No recipes", muted);
+        TextRenderer::DrawText(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 28.0f, "No recipes", muted);
         return;
     }
 
@@ -195,11 +176,11 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
             SDL_RenderTexture(renderer, r.result_texture, nullptr, &dst);
         }
 
-        draw_text(renderer, font, row.x + 34.0f, row.y + 4.0f, r.name.c_str(), can ? white : muted);
+        TextRenderer::DrawText(renderer, font, row.x + 34.0f, row.y + 4.0f, r.name, can ? white : muted);
 
         char line[64];
         snprintf(line, sizeof(line), "x%d", r.result_amount);
-        draw_text(renderer, font, row.x + 34.0f, row.y + 18.0f, line, muted);
+        TextRenderer::DrawText(renderer, font, row.x + 34.0f, row.y + 18.0f, line, muted);
     }
 
     if (selected < 0 || selected >= (int)recipes.size()) return;
@@ -219,13 +200,13 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     SDL_SetRenderDrawColor(renderer, 72, 84, 96, 255);
     SDL_RenderRect(renderer, &detail);
 
-    draw_text(renderer, font, detail.x + 8.0f, detail.y + 8.0f, r.name.c_str(), white);
+    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 8.0f, r.name, white);
 
     char buf[128];
     snprintf(buf, sizeof(buf), "Result: %s x%d", r.name.c_str(), r.result_amount);
-    draw_text(renderer, font, detail.x + 8.0f, detail.y + 28.0f, buf, muted);
-    draw_text(renderer, font, detail.x + 8.0f, detail.y + 48.0f, craftable ? "Status: can craft" : "Status: missing items", craftable ? good : bad);
-    draw_text(renderer, font, detail.x + 8.0f, detail.y + 72.0f, "Ingredients:", yellow);
+    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 28.0f, buf, muted);
+    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 48.0f, craftable ? "Status: can craft" : "Status: missing items", craftable ? good : bad);
+    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 72.0f, "Ingredients:", yellow);
 
     float y = detail.y + 92.0f;
     for (const auto& ing : r.ingredients) {
@@ -249,7 +230,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         }
 
         snprintf(buf, sizeof(buf), "%s  %d", item_type_name(ing.type), ing.amount);
-        draw_text(renderer, font, detail.x + 28.0f, y - 1.0f, buf, enough ? white : bad);
+        TextRenderer::DrawText(renderer, font, detail.x + 28.0f, y - 1.0f, buf, enough ? white : bad);
         y += 18.0f;
     }
 
@@ -258,5 +239,5 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     SDL_RenderFillRect(renderer, &button);
     SDL_SetRenderDrawColor(renderer, 16, 16, 16, 255);
     SDL_RenderRect(renderer, &button);
-    draw_text(renderer, font, button.x + 17.0f, button.y + 4.0f, "Craft", white);
+    TextRenderer::DrawText(renderer, font, button.x + 17.0f, button.y + 4.0f, "Craft", white);
 }

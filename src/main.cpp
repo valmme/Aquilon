@@ -4,12 +4,12 @@
 #include <cstddef>
 #include <cmath>
 #include <cstdio>
-#include <cstring>
 #include <memory>
 #include <string>
 #include "player.h"
 #include "textures.h"
 #include "gui.h"
+#include "textrenderer.h"
 #include "localization.h"
 #include "gen/world.h"
 #include "config.h"
@@ -43,28 +43,6 @@ static void LogAvailableRenderers() {
         const char* driver = SDL_GetRenderDriver(i);
         Logger::Log("SYSTEM", Logger::Level::Info, "  [%d] %s", i, driver ? driver : "<unknown>");
     }
-}
-
-static void DrawDebugText(SDL_Renderer* renderer, TTF_Font* font, float x, float y, const char* text, SDL_Color color) {
-    if (!renderer || !font || !text || !*text) {
-        return;
-    }
-
-    SDL_Surface* surface = TTF_RenderText_Blended(font, text, std::strlen(text), color);
-    if (!surface) {
-        return;
-    }
-
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    if (!texture) {
-        SDL_DestroySurface(surface);
-        return;
-    }
-
-    SDL_FRect dst = {x, y, (float)surface->w, (float)surface->h};
-    SDL_DestroySurface(surface);
-    SDL_RenderTexture(renderer, texture, nullptr, &dst);
-    SDL_DestroyTexture(texture);
 }
 
 struct MiningState {
@@ -342,22 +320,22 @@ int main() {
         const SDL_Color muted = {182, 189, 197, 255};
         const SDL_Color accent_color = {216, 176, 80, 255};
 
-        DrawDebugText(renderer, debug_font.get(), left, y, resource_panel_name.c_str(), title_color);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
         y += 18.0f;
 
         char line[128];
         const std::string yield_label = Localize("Yield");
         snprintf(line, sizeof(line), "%s: %d", yield_label.c_str(), resource_panel_yield);
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
         const std::string type_label = Localize("Type");
         const std::string resource_name = resource_panel_type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         snprintf(line, sizeof(line), "%s: %s", type_label.c_str(), resource_name.c_str());
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
-        DrawDebugText(renderer, debug_font.get(), left, y, Localize("Hold RMB to mine").c_str(), accent_color);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, Localize("Hold RMB to mine"), accent_color);
     });
 
     main_window->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
@@ -387,37 +365,37 @@ int main() {
         const std::string log_level_label = Localize("Log level");
 
         snprintf(line, sizeof(line), "%s: %.1f", fps_label.c_str(), fps);
-        DrawDebugText(renderer, debug_font.get(), left, y, line, label);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, label);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", renderer_label.c_str(), SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", vsync_label.c_str(), config.vsync_enabled ? "on" : "off");
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f", player_label.c_str(), player.player.x, player.player.y);
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         int debug_player_tile_x = (int)player.player.x / TILE_SIZE;
         int debug_player_tile_y = (int)player.player.y / TILE_SIZE;
         snprintf(line, sizeof(line), "%s: %d, %d", tile_label.c_str(), debug_player_tile_x, debug_player_tile_y);
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f zoom=%.2f", camera_label.c_str(), cam.x, cam.y, cam.zoom);
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %zu", chunks_label.c_str(), world.get_chunks().size());
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", log_level_label.c_str(), LogLevelName(config.log_level));
-        DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
     });
 
     Uint64 last_counter = SDL_GetPerformanceCounter();
@@ -533,6 +511,16 @@ int main() {
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
         inv.update(mouse_x, mouse_y);
 
+        const float view_left_world = cam.x;
+        const float view_top_world = cam.y;
+        const float view_right_world = cam.x + (float)win_w / cam.zoom;
+        const float view_bottom_world = cam.y + (float)win_h / cam.zoom;
+
+        const int visible_min_tile_x = (int)std::floor(view_left_world / (float)TILE_SIZE) - 1;
+        const int visible_min_tile_y = (int)std::floor(view_top_world / (float)TILE_SIZE) - 1;
+        const int visible_max_tile_x = (int)std::floor(view_right_world / (float)TILE_SIZE) + 1;
+        const int visible_max_tile_y = (int)std::floor(view_bottom_world / (float)TILE_SIZE) + 1;
+
         SDL_Point hovered_tile = ScreenToTile(cam, mouse_x, mouse_y);
         Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
 
@@ -596,10 +584,33 @@ int main() {
         SDL_RenderClear(renderer);
 
         for (auto& [key, chunk] : world.get_chunks()) {
+            const int chunk_tile_x0 = (int)chunk.pos.x * CHUNK_SIZE;
+            const int chunk_tile_y0 = (int)chunk.pos.y * CHUNK_SIZE;
+            const int chunk_tile_x1 = chunk_tile_x0 + CHUNK_SIZE - 1;
+            const int chunk_tile_y1 = chunk_tile_y0 + CHUNK_SIZE - 1;
+
+            if (chunk_tile_x1 < visible_min_tile_x || chunk_tile_x0 > visible_max_tile_x ||
+                chunk_tile_y1 < visible_min_tile_y || chunk_tile_y0 > visible_max_tile_y) {
+                continue;
+            }
+
+            const int local_min_x = std::max(0, visible_min_tile_x - chunk_tile_x0);
+            const int local_min_y = std::max(0, visible_min_tile_y - chunk_tile_y0);
+            const int local_max_x = std::min(CHUNK_SIZE - 1, visible_max_tile_x - chunk_tile_x0);
+            const int local_max_y = std::min(CHUNK_SIZE - 1, visible_max_tile_y - chunk_tile_y0);
+
             for (int ty = 0; ty < CHUNK_SIZE; ty++) {
+                if (ty < local_min_y || ty > local_max_y) {
+                    continue;
+                }
+
                 for (int tx = 0; tx < CHUNK_SIZE; tx++) {
-                    int world_x = (int)(chunk.pos.x * CHUNK_SIZE) + tx;
-                    int world_y = (int)(chunk.pos.y * CHUNK_SIZE) + ty;
+                    if (tx < local_min_x || tx > local_max_x) {
+                        continue;
+                    }
+
+                    int world_x = chunk_tile_x0 + tx;
+                    int world_y = chunk_tile_y0 + ty;
 
                     Tile t = chunk.tiles[tx][ty];
 
@@ -625,6 +636,15 @@ int main() {
         }
 
         for (const PlacedObject& obj : placed_objects) {
+            const int obj_x1 = obj.x;
+            const int obj_y1 = obj.y;
+            const int obj_x2 = obj.x + (int)obj.size.x - 1;
+            const int obj_y2 = obj.y + (int)obj.size.y - 1;
+            if (obj_x2 < visible_min_tile_x || obj_x1 > visible_max_tile_x ||
+                obj_y2 < visible_min_tile_y || obj_y1 > visible_max_tile_y) {
+                continue;
+            }
+
             if (!obj.texture) continue;
 
             SDL_FRect dst = cam.WorldToScreenRect(
@@ -661,6 +681,8 @@ int main() {
     Logger::Log("APPLICATION", Logger::Level::Info, "Released textures.");
 
     delete crafting;
+
+    TextRenderer::ClearCache();
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);

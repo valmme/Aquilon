@@ -1,9 +1,9 @@
 #include "inv/inventory.h"
 #include "inv/crafting.h"
+#include "textrenderer.h"
 #include "vmath.h"
 #include "localization.h"
 #include <cstdio>
-#include <cstring>
 
 static constexpr float SLOT_SIZE      = 35.0f;
 static constexpr float SLOT_SPACING   = 0.0f;
@@ -63,38 +63,27 @@ void Inventory::open_window() {
                     char buf[64];
                     snprintf(buf, sizeof(buf), "%s (%d)", slot.item->name.c_str(), slot.item->amount);
 
-                    SDL_Surface* surf = TTF_RenderText_Blended(font, buf, strlen(buf), SDL_Color{255, 255, 255, 255});
-                    if (surf) {
-                        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
+                    float bg_w = 140.0f;
+                    float bg_h = (float)TTF_GetFontHeight(font) + 4.0f;
+                    float bg_x = slot.dest.x + slot.dest.w + 6.0f;
+                    float bg_y = slot.dest.y - bg_h - 4.0f;
 
-                        if (tex) {
-                            float bg_w = (float)surf->w + 8.0f;
-                            float bg_h = (float)surf->h + 4.0f;
-                            float bg_x = slot.dest.x + slot.dest.w + 6.0f;
-                            float bg_y = slot.dest.y - bg_h - 4.0f;
-
-                            if (bg_y < content_rect.y) {
-                                bg_y = slot.dest.y + slot.dest.h + 4.0f;
-                            }
-
-                            float max_x = content_rect.x + content_rect.w - bg_w;
-                            float max_y = content_rect.y + content_rect.h - bg_h;
-                            if (bg_x < content_rect.x) bg_x = content_rect.x;
-                            if (bg_y < content_rect.y) bg_y = content_rect.y;
-                            if (bg_x > max_x) bg_x = max_x;
-                            if (bg_y > max_y) bg_y = max_y;
-
-                            SDL_FRect bg = {bg_x, bg_y, bg_w, bg_h};
-                            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-                            SDL_RenderFillRect(renderer, &bg);
-
-                            SDL_FRect tdst = {bg.x + 4, bg.y + 2, (float)surf->w, (float)surf->h};
-                            SDL_RenderTexture(renderer, tex, nullptr, &tdst);
-                            SDL_DestroyTexture(tex);
-                        }
-
-                        SDL_DestroySurface(surf);
+                    if (bg_y < content_rect.y) {
+                        bg_y = slot.dest.y + slot.dest.h + 4.0f;
                     }
+
+                    float max_x = content_rect.x + content_rect.w - bg_w;
+                    float max_y = content_rect.y + content_rect.h - bg_h;
+                    if (bg_x < content_rect.x) bg_x = content_rect.x;
+                    if (bg_y < content_rect.y) bg_y = content_rect.y;
+                    if (bg_x > max_x) bg_x = max_x;
+                    if (bg_y > max_y) bg_y = max_y;
+
+                    SDL_FRect bg = {bg_x, bg_y, bg_w, bg_h};
+                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+                    SDL_RenderFillRect(renderer, &bg);
+
+                    TextRenderer::DrawText(renderer, font, bg.x + 4.0f, bg.y + 2.0f, buf, SDL_Color{255, 255, 255, 255});
                 }
             }
         }
@@ -186,36 +175,17 @@ void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
         snprintf(buf, sizeof(buf), "%d", cursor_item->amount);
 
         SDL_Color white = {255, 255, 255, 255};
-        SDL_Surface* surf = TTF_RenderText_Blended(font, buf, strlen(buf), white);
-        if (!surf) return;
-
-        SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, surf);
-        if (!tex) {
-            SDL_DestroySurface(surf);
-            return;
-        }
-
         SDL_FRect bg = {
-            cursor_item->dest.x + cursor_item->dest.w - surf->w - 4,
-            cursor_item->dest.y + cursor_item->dest.h - surf->h - 4,
-            (float)surf->w + 6,
-            (float)surf->h + 4
+            cursor_item->dest.x + cursor_item->dest.w - 18.0f,
+            cursor_item->dest.y + cursor_item->dest.h - (float)TTF_GetFontHeight(font) - 4.0f,
+            18.0f,
+            (float)TTF_GetFontHeight(font) + 4.0f
         };
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
         SDL_RenderFillRect(renderer, &bg);
 
-        SDL_FRect tdst = {
-            bg.x + 3,
-            bg.y + 2,
-            (float)surf->w,
-            (float)surf->h
-        };
-
-        SDL_RenderTexture(renderer, tex, nullptr, &tdst);
-
-        SDL_DestroyTexture(tex);
-        SDL_DestroySurface(surf);
+        TextRenderer::DrawText(renderer, font, bg.x + 3.0f, bg.y + 2.0f, buf, white);
     }
 }
 

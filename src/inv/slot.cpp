@@ -1,9 +1,8 @@
 #include "inv/slot.h"
+#include "textrenderer.h"
 #include "vmath.h"
-#include <cstring>
 
 static constexpr float SLOT_SIZE = 35.0f;
-static constexpr float AMOUNT_FONT_SIZE = 8.0f;
 
 Slot::Slot(float x, float y) {
     dest.x = x;
@@ -115,37 +114,20 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
         if (item->amount > 1 && font) {
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", item->amount);
-
             SDL_Color white = {255, 255, 255, 255};
-            SDL_Surface* surf = TTF_RenderText_Blended(font, buf, strlen(buf), white);
-            if (surf) {
-                SDL_Texture* textTex = SDL_CreateTextureFromSurface(renderer, surf);
-                if (textTex) {
-                    float tw = (float)surf->w;
-                    float th = (float)surf->h;
+            float bg_w = 18.0f;
+            float bg_h = (float)TTF_GetFontHeight(font) + 2.0f;
 
-                    SDL_FRect shadow = {
-                        dest.x + dest.w - tw - 2,
-                        dest.y + dest.h - th - 2,
-                        tw + 1,
-                        th
-                    };
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
-                    SDL_RenderFillRect(renderer, &shadow);
+            SDL_FRect shadow = {
+                dest.x + dest.w - bg_w - 2.0f,
+                dest.y + dest.h - bg_h - 2.0f,
+                bg_w,
+                bg_h
+            };
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+            SDL_RenderFillRect(renderer, &shadow);
 
-                    float scale = AMOUNT_FONT_SIZE / 10.0f;
-
-                    SDL_FRect tdst = {
-                        dest.x + dest.w - tw * scale - 2,
-                        dest.y + dest.h - th * scale - 2,
-                        tw * scale,
-                        th * scale
-                    };
-                    SDL_RenderTexture(renderer, textTex, nullptr, &tdst);
-                    SDL_DestroyTexture(textTex);
-                }
-                SDL_DestroySurface(surf);
-            }
+            TextRenderer::DrawText(renderer, font, shadow.x + 2.0f, shadow.y + 1.0f, buf, white);
         }
     }
 
