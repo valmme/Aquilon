@@ -3,6 +3,7 @@
 
 #include "SDL3/SDL.h"
 #include "vmath.h"
+#include "config.h"
 
 struct Camera {
     float x = 0;
@@ -59,7 +60,7 @@ struct Camera {
 
 class Player {
 public:
-    Player();
+    explicit Player(const InputConfig& input = InputConfig{});
 
     void handle_input(const SDL_Event& e);
     void update(float delta_time);
@@ -68,6 +69,7 @@ public:
     SDL_FRect player;
 
 private:
+    InputConfig input;
     float speed;
 
     bool up, down, left, right;

@@ -1,6 +1,6 @@
 #include "player.h"
 
-Player::Player() {
+Player::Player(const InputConfig& input) : input(input) {
     player = { 0.0f, 0.0f, 32, 32 };
     speed = 250.0f;
 
@@ -13,27 +13,17 @@ Player::Player() {
 
 void Player::handle_input(const SDL_Event& e) {
     if (e.type == SDL_EVENT_KEY_DOWN) {
-        if (e.key.key == SDLK_W) up = true;
-        if (e.key.key == SDLK_S) down = true;
-        if (e.key.key == SDLK_A) left = true;
-        if (e.key.key == SDLK_D) right = true;
-        
-        if (e.key.key == SDLK_UP)    up = true;
-        if (e.key.key == SDLK_DOWN)  down = true;
-        if (e.key.key == SDLK_LEFT)  left = true;
-        if (e.key.key == SDLK_RIGHT) right = true;
+        if (KeyBindMatches(input.move_up, e.key.key)) up = true;
+        if (KeyBindMatches(input.move_down, e.key.key)) down = true;
+        if (KeyBindMatches(input.move_left, e.key.key)) left = true;
+        if (KeyBindMatches(input.move_right, e.key.key)) right = true;
     }
 
     if (e.type == SDL_EVENT_KEY_UP) {
-        if (e.key.key == SDLK_W) up = false;
-        if (e.key.key == SDLK_S) down = false;
-        if (e.key.key == SDLK_A) left = false;
-        if (e.key.key == SDLK_D) right = false;
-
-        if (e.key.key == SDLK_UP)    up = false;
-        if (e.key.key == SDLK_DOWN)  down = false;
-        if (e.key.key == SDLK_LEFT)  left = false;
-        if (e.key.key == SDLK_RIGHT) right = false;
+        if (KeyBindMatches(input.move_up, e.key.key)) up = false;
+        if (KeyBindMatches(input.move_down, e.key.key)) down = false;
+        if (KeyBindMatches(input.move_left, e.key.key)) left = false;
+        if (KeyBindMatches(input.move_right, e.key.key)) right = false;
     }
 }
 

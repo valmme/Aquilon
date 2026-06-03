@@ -8,6 +8,7 @@
 #include "slot.h"
 #include "item.h"
 #include "gui.h"
+#include "config.h"
 
 class CraftingSystem;
 
@@ -17,7 +18,7 @@ public:
     Item* cursor_item = nullptr;
     bool open = false;
 
-    Inventory(GUIEngine& gui, Textures tex, TTF_Font* font);
+    Inventory(GUIEngine& gui, Textures tex, TTF_Font* font, const InputConfig& input = InputConfig{});
     ~Inventory();
 
     Textures tex;
@@ -62,6 +63,7 @@ private:
     TTF_Font* font = nullptr;
 
     CraftingSystem* crafting = nullptr;
+    InputConfig input;
 
     void open_window();
     void close_window();

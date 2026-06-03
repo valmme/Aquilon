@@ -1,6 +1,7 @@
 #include "inv/inventory.h"
 #include "inv/crafting.h"
 #include "vmath.h"
+#include "localization.h"
 #include <cstdio>
 #include <cstring>
 
@@ -14,7 +15,7 @@ static constexpr float CRAFT_PANEL_W = 260.0f;
 static constexpr float INV_WIN_W = INVENTORY_COLS * SLOT_SIZE + (INVENTORY_COLS + 1) * SLOT_SPACING + SLOT_SPACING;
 static constexpr float INV_WIN_H = INVENTORY_ROWS * SLOT_SIZE + (INVENTORY_ROWS + 1) * SLOT_SPACING + SLOT_SIZE;
 
-Inventory::Inventory(GUIEngine& gui, Textures tex, TTF_Font* font) : gui(gui), font(font), tex(tex) {
+Inventory::Inventory(GUIEngine& gui, Textures tex, TTF_Font* font, const InputConfig& input) : gui(gui), font(font), tex(tex), input(input) {
     for (int j = 0; j < INVENTORY_ROWS; j++) {
         for (int i = 0; i < INVENTORY_COLS; i++) {
             float x = SLOT_SPACING + i * (SLOT_SIZE + SLOT_SPACING);
@@ -30,7 +31,7 @@ Inventory::~Inventory() {
 }
 
 void Inventory::open_window() {
-    window = gui.create_inv_window(100, 150, INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H, "Inventory");
+    window = gui.create_inv_window(100, 150, INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H, Localize("Inventory"));
 
     window->set_content_draw_callback([this](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Rect clip = {
@@ -125,19 +126,25 @@ void Inventory::close_window() {
 }
 
 void Inventory::handle_event(const SDL_Event& e) {
-    if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_ESCAPE) {
-        if (open) close_window();
-        return;
-    }
+    if (e.type == SDL_EVENT_KEY_DOWN && !e.key.repeat) {
+        if (open && KeyBindMatches(input.inventory_close, e.key.key)) {
+            close_window();
+            return;
+        }
 
-    if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_E) {
-        open = !open;
-        if (open) open_window();
-        else close_window();
-        return;
+        if (KeyBindMatches(input.inventory_toggle, e.key.key)) {
+            open = !open;
+            if (open) open_window();
+            else close_window();
+            return;
+        }
     }
 
     if (!open) return;
+
+    if (e.type == SDL_EVENT_KEY_DOWN && e.key.repeat) {
+        return;
+    }
 
     for (Slot& slot : slots) slot.update(cursor_item, e);
 

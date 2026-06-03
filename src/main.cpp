@@ -10,6 +10,7 @@
 #include "player.h"
 #include "textures.h"
 #include "gui.h"
+#include "localization.h"
 #include "gen/world.h"
 #include "config.h"
 #include "logger.h"
@@ -218,16 +219,22 @@ int main() {
     LoadAppConfig(config_path, config);
     Logger::SetLogLevel(config.log_level);
 
+    std::string localization_path = "resources/localization/" + config.language + ".loc";
+    if (const char* base_path = SDL_GetBasePath(); base_path && *base_path) {
+        localization_path = std::string(base_path) + "resources/localization/" + config.language + ".loc";
+    }
+    LoadLocalization(localization_path);
+
     Logger::Log("APPLICATION", Logger::Level::Info, "Starting Aquilon...");
     Logger::Log("APPLICATION", Logger::Level::Info, "Log level: %s", LogLevelName(config.log_level));
 
-    SDL_Window* window = SDL_CreateWindow("Aquilon", 800, 600, 0);
+    SDL_Window* window = SDL_CreateWindow("Aquilon", config.window_width, config.window_height, 0);
     if (!window) {
         Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to create window: %s", SDL_GetError());
         SDL_Quit();
         return 1;
     }
-    Logger::Log("SYSTEM", Logger::Level::Info, "Created window: 800x600.");
+    Logger::Log("SYSTEM", Logger::Level::Info, "Created window: %dx%d.", config.window_width, config.window_height);
 
     if (!config.renderer_backend.empty()) {
         Logger::Log("SYSTEM", Logger::Level::Info, "Requested renderer backend: %s", config.renderer_backend.c_str());
@@ -271,9 +278,9 @@ int main() {
     }
 
     World world;
-    Player player;
+    Player player(config.input);
     Camera cam;
-    Inventory inv(gui_engine, tex, debug_font.get());
+    Inventory inv(gui_engine, tex, debug_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
     inv.set_crafting_system(crafting);
     inv.pick(new Item{ItemType::FURNACE, "Furnace", 67, tex.furnace, true, {2, 2}});
@@ -298,11 +305,12 @@ int main() {
     MiningState mining;
     bool right_hold_blocked = false;
     bool resource_panel_visible = false;
-    const char* resource_panel_name = "";
+    std::string resource_panel_name;
     int resource_panel_yield = 0;
     TileType resource_panel_type = EMPTY;
 
-    GUIWindow* main_window = gui_engine.create_window(10, 10, 330, 220, "Game Status");
+    const std::string game_status_title = Localize("Game Status");
+    GUIWindow* main_window = gui_engine.create_window(10, 10, 330, 220, game_status_title);
     GUIWindow* resource_panel = gui_engine.create_info_window(0, 0, 220, 110);
     resource_panel->set_visible(false);
     resource_panel->set_background_color(21, 24, 29, 245);
@@ -334,19 +342,22 @@ int main() {
         const SDL_Color muted = {182, 189, 197, 255};
         const SDL_Color accent_color = {216, 176, 80, 255};
 
-        DrawDebugText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
+        DrawDebugText(renderer, debug_font.get(), left, y, resource_panel_name.c_str(), title_color);
         y += 18.0f;
 
         char line[128];
-        snprintf(line, sizeof(line), "Yield: %d", resource_panel_yield);
+        const std::string yield_label = Localize("Yield");
+        snprintf(line, sizeof(line), "%s: %d", yield_label.c_str(), resource_panel_yield);
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
-        snprintf(line, sizeof(line), "Type: %s", resource_panel_type == IRON_ORE ? "IRON_ORE" : "Stone");
+        const std::string type_label = Localize("Type");
+        const std::string resource_name = resource_panel_type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
+        snprintf(line, sizeof(line), "%s: %s", type_label.c_str(), resource_name.c_str());
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += 18.0f;
 
-        DrawDebugText(renderer, debug_font.get(), left, y, "Hold RMB to mine", accent_color);
+        DrawDebugText(renderer, debug_font.get(), left, y, Localize("Hold RMB to mine").c_str(), accent_color);
     });
 
     main_window->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
@@ -366,38 +377,46 @@ int main() {
         const SDL_Color muted = {180, 190, 200, 255};
 
         char line[128];
+        const std::string fps_label = Localize("FPS");
+        const std::string renderer_label = Localize("Renderer");
+        const std::string vsync_label = Localize("VSync");
+        const std::string player_label = Localize("Player");
+        const std::string tile_label = Localize("Tile");
+        const std::string camera_label = Localize("Camera");
+        const std::string chunks_label = Localize("Chunks");
+        const std::string log_level_label = Localize("Log level");
 
-        snprintf(line, sizeof(line), "FPS: %.1f", fps);
+        snprintf(line, sizeof(line), "%s: %.1f", fps_label.c_str(), fps);
         DrawDebugText(renderer, debug_font.get(), left, y, line, label);
         y += line_step;
 
-        snprintf(line, sizeof(line), "Renderer: %s", SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
+        snprintf(line, sizeof(line), "%s: %s", renderer_label.c_str(), SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
-        snprintf(line, sizeof(line), "VSync: %s", config.vsync_enabled ? "on" : "off");
+        snprintf(line, sizeof(line), "%s: %s", vsync_label.c_str(), config.vsync_enabled ? "on" : "off");
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
-        snprintf(line, sizeof(line), "Player: x=%.1f y=%.1f", player.player.x, player.player.y);
+        snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f", player_label.c_str(), player.player.x, player.player.y);
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
         int debug_player_tile_x = (int)player.player.x / TILE_SIZE;
         int debug_player_tile_y = (int)player.player.y / TILE_SIZE;
-        snprintf(line, sizeof(line), "Tile: %d, %d", debug_player_tile_x, debug_player_tile_y);
+        snprintf(line, sizeof(line), "%s: %d, %d", tile_label.c_str(), debug_player_tile_x, debug_player_tile_y);
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
-        snprintf(line, sizeof(line), "Camera: x=%.1f y=%.1f zoom=%.2f", cam.x, cam.y, cam.zoom);
+        snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f zoom=%.2f", camera_label.c_str(), cam.x, cam.y, cam.zoom);
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
-        snprintf(line, sizeof(line), "Chunks: %zu", world.get_chunks().size());
+        snprintf(line, sizeof(line), "%s: %zu", chunks_label.c_str(), world.get_chunks().size());
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
         y += line_step;
 
-        snprintf(line, sizeof(line), "Log level: %s", LogLevelName(config.log_level));
+        snprintf(line, sizeof(line), "%s: %s", log_level_label.c_str(), LogLevelName(config.log_level));
         DrawDebugText(renderer, debug_font.get(), left, y, line, muted);
     });
 
@@ -443,10 +462,10 @@ int main() {
             }
 
             if (!gui_consumed && e.type == SDL_EVENT_KEY_DOWN) {
-                if (e.key.key == SDLK_MINUS || e.key.key == SDLK_KP_MINUS) {
+                if (KeyBindMatches(config.input.zoom_out, e.key.key)) {
                     cam.zoom /= 1.1f;
                     if (cam.zoom < 0.25f) cam.zoom = 0.25f;
-                } else if (e.key.key == SDLK_EQUALS || e.key.key == SDLK_KP_PLUS) {
+                } else if (KeyBindMatches(config.input.zoom_in, e.key.key)) {
                     cam.zoom *= 1.1f;
                     if (cam.zoom > 4.0f) cam.zoom = 4.0f;
                 }
@@ -518,7 +537,7 @@ int main() {
         Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
 
         resource_panel_visible = IsMineable(hovered_tile_data.type);
-        resource_panel_name = TileResourceName(hovered_tile_data.type);
+        resource_panel_name = hovered_tile_data.type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         resource_panel_yield = hovered_tile_data.yield;
         resource_panel_type = hovered_tile_data.type;
         resource_panel->position.x = (float)win_w - resource_panel->size.x - 16.0f;

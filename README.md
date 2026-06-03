@@ -71,9 +71,20 @@ The game reads `aquilon.cfg` from the same directory as the executable. If the f
 renderer = auto
 log_level = trace
 vsync = on
+window_width = 1280
+window_height = 720
+move_up = W, Up
+move_down = S, Down
+move_left = A, Left
+move_right = D, Right
+inventory_toggle = E
+inventory_close = Escape
+zoom_in = Equals, Keypad +
+zoom_out = Minus, Keypad -
 ```
 
 Accepted renderer values include `auto`, `software`, `gpu`, `vulkan`, `opengl`, `direct3d11`, `direct3d12`, and `metal`.
+Key bindings use SDL key names and can list multiple keys separated by commas.
 
 ## Resources
 
