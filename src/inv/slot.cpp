@@ -19,11 +19,18 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
         item->dest.h = SLOT_SIZE;
     }
 
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+        pressed = false;
+        return;
+    }
+
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN) return;
 
     float mx = (float)e.button.x;
     float my = (float)e.button.y;
     if (!point_in_rec(mx, my, dest)) return;
+
+    pressed = true;
 
     if (e.button.button == SDL_BUTTON_LEFT) {
         if (!item) {
@@ -102,11 +109,12 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
     } 
     
     else {
-        SDL_SetRenderDrawColor(renderer, 60, 60, 60, 220);
+        SDL_SetRenderDrawColor(renderer, 24, 25, 29, 235);
         SDL_RenderFillRect(renderer, &dest);
     }
 
-    SDL_SetRenderDrawColor(renderer, 120, 120, 120, 255);
+    SDL_SetRenderDrawColor(renderer, 44, 48, 56, 255);
+    SDL_RenderRect(renderer, &dest);
 
     if (item) {
         item->draw(renderer, SLOT_SIZE);
@@ -114,7 +122,6 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
         if (item->amount > 1 && font) {
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", item->amount);
-            SDL_Color white = {255, 255, 255, 255};
             float bg_w = 18.0f;
             float bg_h = (float)TTF_GetFontHeight(font) + 2.0f;
 
@@ -124,15 +131,24 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
                 bg_w,
                 bg_h
             };
-            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+            SDL_SetRenderDrawColor(renderer, 8, 9, 11, 210);
             SDL_RenderFillRect(renderer, &shadow);
 
-            TextRenderer::DrawText(renderer, font, shadow.x + 2.0f, shadow.y + 1.0f, buf, white);
+            TextRenderer::DrawText(renderer, font, shadow.x + 2.0f, shadow.y + 1.0f, buf, SDL_Color{235, 237, 241, 255});
         }
     }
 
     if (selected) {
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 60);
+        SDL_SetRenderDrawColor(renderer, 220, 196, 134, 38);
         SDL_RenderFillRect(renderer, &dest);
+        SDL_SetRenderDrawColor(renderer, 220, 196, 134, 120);
+        SDL_RenderRect(renderer, &dest);
+    }
+
+    if (pressed) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 120);
+        SDL_RenderFillRect(renderer, &dest);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+        SDL_RenderRect(renderer, &dest);
     }
 }

@@ -294,15 +294,15 @@ int main() {
     resource_panel->set_background_color(21, 24, 29, 245);
     resource_panel->set_border_color(66, 74, 86, 255);
     resource_panel->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
-        SDL_SetRenderDrawColor(renderer, 31, 35, 42, 255);
+        SDL_SetRenderDrawColor(renderer, 16, 17, 21, 255);
         SDL_RenderFillRect(renderer, &content_rect);
 
-        SDL_SetRenderDrawColor(renderer, 58, 70, 86, 255);
-        SDL_FRect accent = {content_rect.x, content_rect.y, content_rect.w, 2.0f};
+        SDL_SetRenderDrawColor(renderer, 44, 48, 56, 255);
+        SDL_FRect accent = {content_rect.x, content_rect.y, content_rect.w, 1.0f};
         SDL_RenderFillRect(renderer, &accent);
 
         SDL_FRect icon_bg = {content_rect.x + 10.0f, content_rect.y + 10.0f, 28.0f, 28.0f};
-        SDL_SetRenderDrawColor(renderer, 12, 14, 18, 255);
+        SDL_SetRenderDrawColor(renderer, 10, 11, 13, 255);
         SDL_RenderFillRect(renderer, &icon_bg);
 
         SDL_Texture* icon = nullptr;
@@ -316,9 +316,9 @@ int main() {
 
         const float left = icon_bg.x + icon_bg.w + 10.0f;
         float y = content_rect.y + 10.0f;
-        const SDL_Color title_color = {240, 243, 247, 255};
-        const SDL_Color muted = {182, 189, 197, 255};
-        const SDL_Color accent_color = {216, 176, 80, 255};
+        const SDL_Color title_color = {238, 240, 243, 255};
+        const SDL_Color muted = {170, 176, 184, 255};
+        const SDL_Color accent_color = {220, 196, 134, 255};
 
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
         y += 18.0f;
@@ -339,20 +339,20 @@ int main() {
     });
 
     main_window->set_content_draw_callback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
-        SDL_Color panel_fill = {24, 30, 34, 255};
+        SDL_Color panel_fill = {16, 17, 21, 255};
         SDL_SetRenderDrawColor(renderer, panel_fill.r, panel_fill.g, panel_fill.b, panel_fill.a);
         SDL_RenderFillRect(renderer, &content_rect);
 
-        SDL_Color accent = {90, 140, 170, 255};
+        SDL_Color accent = {58, 62, 70, 255};
         SDL_SetRenderDrawColor(renderer, accent.r, accent.g, accent.b, accent.a);
-        SDL_FRect top_line = {content_rect.x, content_rect.y, content_rect.w, 2.0f};
+        SDL_FRect top_line = {content_rect.x, content_rect.y, content_rect.w, 1.0f};
         SDL_RenderFillRect(renderer, &top_line);
 
         const float left = content_rect.x + 8.0f;
         float y = content_rect.y + 8.0f;
         const float line_step = 18.0f;
-        const SDL_Color label = {235, 235, 235, 255};
-        const SDL_Color muted = {180, 190, 200, 255};
+        const SDL_Color label = {238, 239, 242, 255};
+        const SDL_Color muted = {165, 172, 180, 255};
 
         char line[128];
         const std::string fps_label = Localize("FPS");

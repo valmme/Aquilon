@@ -11,6 +11,7 @@ public:
     Item* item = nullptr;
     SDL_FRect dest = {0, 0, 50, 50};
     bool selected = false;
+    bool pressed = false;
 
     Slot(float x, float y);
 

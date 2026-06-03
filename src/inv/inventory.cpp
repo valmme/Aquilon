@@ -80,10 +80,10 @@ void Inventory::open_window() {
                     if (bg_y > max_y) bg_y = max_y;
 
                     SDL_FRect bg = {bg_x, bg_y, bg_w, bg_h};
-                    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+                    SDL_SetRenderDrawColor(renderer, 8, 9, 11, 210);
                     SDL_RenderFillRect(renderer, &bg);
 
-                    TextRenderer::DrawText(renderer, font, bg.x + 4.0f, bg.y + 2.0f, buf, SDL_Color{255, 255, 255, 255});
+                    TextRenderer::DrawText(renderer, font, bg.x + 4.0f, bg.y + 2.0f, buf, SDL_Color{235, 237, 241, 255});
                 }
             }
         }
@@ -174,7 +174,7 @@ void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
         char buf[16];
         snprintf(buf, sizeof(buf), "%d", cursor_item->amount);
 
-        SDL_Color white = {255, 255, 255, 255};
+        SDL_Color white = {236, 238, 242, 255};
         SDL_FRect bg = {
             cursor_item->dest.x + cursor_item->dest.w - 18.0f,
             cursor_item->dest.y + cursor_item->dest.h - (float)TTF_GetFontHeight(font) - 4.0f,
@@ -182,7 +182,7 @@ void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
             (float)TTF_GetFontHeight(font) + 4.0f
         };
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 180);
+        SDL_SetRenderDrawColor(renderer, 8, 9, 11, 210);
         SDL_RenderFillRect(renderer, &bg);
 
         TextRenderer::DrawText(renderer, font, bg.x + 3.0f, bg.y + 2.0f, buf, white);

@@ -122,16 +122,16 @@ void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_
 void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rect, const Inventory& inv) const {
     if (!renderer) return;
 
-    SDL_SetRenderDrawColor(renderer, 28, 32, 38, 255);
+    SDL_SetRenderDrawColor(renderer, 14, 15, 18, 255);
     SDL_RenderFillRect(renderer, &panel_rect);
-    SDL_SetRenderDrawColor(renderer, 60, 72, 84, 255);
+    SDL_SetRenderDrawColor(renderer, 40, 44, 52, 255);
     SDL_RenderRect(renderer, &panel_rect);
 
-    SDL_Color white = {240, 243, 247, 255};
-    SDL_Color muted = {180, 188, 196, 255};
-    SDL_Color good = {120, 220, 140, 255};
-    SDL_Color bad = {230, 100, 100, 255};
-    SDL_Color yellow = {220, 200, 90, 255};
+    SDL_Color white = {238, 240, 243, 255};
+    SDL_Color muted = {166, 172, 180, 255};
+    SDL_Color good = {156, 206, 164, 255};
+    SDL_Color bad = {216, 102, 102, 255};
+    SDL_Color yellow = {220, 196, 134, 255};
 
     TextRenderer::DrawText(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 4.0f, "Crafting", white);
 
@@ -159,16 +159,16 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
             LIST_ROW_H - 3.0f
         };
 
-        if (sel) SDL_SetRenderDrawColor(renderer, 60, 92, 122, 255);
-        else if (hov) SDL_SetRenderDrawColor(renderer, 50, 58, 68, 255);
-        else SDL_SetRenderDrawColor(renderer, 38, 44, 52, 255);
+        if (sel) SDL_SetRenderDrawColor(renderer, 54, 58, 66, 255);
+        else if (hov) SDL_SetRenderDrawColor(renderer, 32, 35, 41, 255);
+        else SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
 
         SDL_RenderFillRect(renderer, &row);
-        SDL_SetRenderDrawColor(renderer, 16, 18, 22, 255);
+        SDL_SetRenderDrawColor(renderer, 34, 37, 44, 255);
         SDL_RenderRect(renderer, &row);
 
         SDL_FRect icon = { row.x + 4.0f, row.y + 5.0f, ICON_BOX, ICON_BOX };
-        SDL_SetRenderDrawColor(renderer, 10, 12, 14, 255);
+        SDL_SetRenderDrawColor(renderer, 10, 11, 13, 255);
         SDL_RenderFillRect(renderer, &icon);
 
         if (r.result_texture) {
@@ -195,9 +195,9 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         panel_rect.h - PANEL_PAD * 2.0f - 18.0f
     };
 
-    SDL_SetRenderDrawColor(renderer, 22, 26, 31, 255);
+    SDL_SetRenderDrawColor(renderer, 16, 17, 21, 255);
     SDL_RenderFillRect(renderer, &detail);
-    SDL_SetRenderDrawColor(renderer, 72, 84, 96, 255);
+    SDL_SetRenderDrawColor(renderer, 42, 46, 54, 255);
     SDL_RenderRect(renderer, &detail);
 
     TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 8.0f, r.name, white);
@@ -213,7 +213,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         bool enough = inv.get_amount(ing.type) >= ing.amount;
 
         SDL_FRect icon = { detail.x + 8.0f, y + 1.0f, 14.0f, 14.0f };
-        SDL_SetRenderDrawColor(renderer, 10, 12, 14, 255);
+        SDL_SetRenderDrawColor(renderer, 10, 11, 13, 255);
         SDL_RenderFillRect(renderer, &icon);
 
         SDL_Texture* icon_tex = nullptr;
@@ -235,9 +235,9 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     }
 
     SDL_FRect button = { detail.x + 8.0f, detail.y + detail.h - 34.0f, 92.0f, 24.0f };
-    SDL_SetRenderDrawColor(renderer, craftable ? 40 : 55, craftable ? 120 : 60, craftable ? 55 : 60, 255);
+    SDL_SetRenderDrawColor(renderer, craftable ? 38 : 28, craftable ? 38 : 30, craftable ? 42 : 34, 255);
     SDL_RenderFillRect(renderer, &button);
-    SDL_SetRenderDrawColor(renderer, 16, 16, 16, 255);
+    SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
     SDL_RenderRect(renderer, &button);
     TextRenderer::DrawText(renderer, font, button.x + 17.0f, button.y + 4.0f, "Craft", white);
 }

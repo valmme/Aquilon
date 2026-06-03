@@ -3,19 +3,19 @@
 #include "logger.h"
 #include <cmath>
 
-static constexpr SDL_Color GUI_BG_COLOR = {24, 27, 33, 255};
-static constexpr SDL_Color GUI_BORDER_COLOR = {74, 84, 98, 255};
-static constexpr SDL_Color GUI_TITLE_BG_COLOR = {29, 33, 40, 255};
-static constexpr SDL_Color GUI_TITLE_TEXT_COLOR = {238, 241, 245, 255};
-static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {12, 14, 18, 220};
-static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {170, 178, 188, 255};
-static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {234, 238, 242, 255};
+static constexpr SDL_Color GUI_BG_COLOR = {14, 15, 18, 248};
+static constexpr SDL_Color GUI_BORDER_COLOR = {42, 46, 54, 255};
+static constexpr SDL_Color GUI_TITLE_BG_COLOR = {18, 19, 23, 255};
+static constexpr SDL_Color GUI_TITLE_TEXT_COLOR = {236, 238, 242, 255};
+static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {6, 7, 9, 210};
+static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {155, 160, 168, 255};
+static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {242, 244, 246, 255};
 
 GUIWindow::GUIWindow(float x, float y, float width, float height, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
     : position({x, y}), size({width, height}), title(title),
       background_color(GUI_BG_COLOR),
       border_color(GUI_BORDER_COLOR),
-      border_width(2.0f),
+      border_width(1.0f),
       title_font(title_font),
       renderer(renderer),
       dragging(false),
@@ -23,7 +23,7 @@ GUIWindow::GUIWindow(float x, float y, float width, float height, const std::str
       closed(false),
       visible(true),
       chrome_visible(true),
-      title_bar_height(21.0f),
+      title_bar_height(23.0f),
       close_button_size(16.0f),
       close_button_pressed(false),
       close_button_rect({0, 0, 0, 0}),
@@ -190,7 +190,7 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
     SDL_FRect title_bg = {position.x + border_width, position.y + border_width, available_width, title_bar_height};
     SDL_RenderFillRect(renderer, &title_bg);
 
-    SDL_SetRenderDrawColor(renderer, 45, 54, 66, 255);
+    SDL_SetRenderDrawColor(renderer, 32, 35, 41, 255);
     SDL_FRect title_line = {position.x + border_width, position.y + border_width + title_bar_height - 1.0f, available_width, 1.0f};
     SDL_RenderFillRect(renderer, &title_line);
 
