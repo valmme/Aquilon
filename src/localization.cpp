@@ -141,7 +141,7 @@ bool LoadLocalization(const std::string& path) {
             switch (header_line) {
                 case 1: loaded_state.info.display_name = value; break;
                 case 2: loaded_state.info.numeric_id = value; break;
-                case 3: loaded_state.info.code = ToLower(value); break;
+                case 3: loaded_state.info.code = ToLower(value); in_header = false; break;
                 default: break;
             }
             ++header_line;
