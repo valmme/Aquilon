@@ -17,6 +17,7 @@ struct Textures {
 
     // ui
     SDL_Texture* slot;
+    SDL_Texture* crafting_slot;
 };
 
 Textures load_textures(SDL_Renderer* renderer);

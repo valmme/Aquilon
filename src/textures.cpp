@@ -45,7 +45,8 @@ Textures load_textures(SDL_Renderer* renderer) {
     t.furnace  = load_texture(renderer, "furnace", "resources/textures/furnace.png");
 
     // ui
-    t.slot  = load_texture(renderer, "slot", "resources/textures/slot.png");
+    t.slot          = load_texture(renderer, "slot", "resources/textures/slot.png");
+    t.crafting_slot = load_texture(renderer, "crafting_slot", "resources/textures/crafting_slot.png");
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
 

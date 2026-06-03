@@ -2,10 +2,36 @@
 #include "inv/inventory.h"
 #include "textrenderer.h"
 #include <cstdio>
+#include <climits> 
 
-static constexpr float PANEL_PAD = 8.0f;
-static constexpr float LIST_ROW_H = 34.0f;
-static constexpr float ICON_BOX = 24.0f;
+static constexpr float PANEL_PAD  = 8.0f;
+static constexpr float SLOT_W     = 42.0f;
+static constexpr float SLOT_H     = 42.0f;
+static constexpr float SLOT_GAP   = 4.0f;
+static constexpr int   GRID_COLS  = 4;
+
+static int craft_count(const Inventory& inv, const Recipe& r) {
+    int count = INT_MAX;
+    
+    for (const auto& ing : r.ingredients) {
+        int have = inv.get_amount(ing.type);
+        count = std::min(count, have / ing.amount);
+    }
+
+    return (count == INT_MAX) ? 0 : count;
+}
+
+static SDL_FRect slot_rect(const SDL_FRect& panel, int i) {
+    int col = i % GRID_COLS;
+    int row = i / GRID_COLS;
+
+    return {
+        panel.x + PANEL_PAD + col * (SLOT_W + SLOT_GAP),
+        panel.y + PANEL_PAD + 18.0f + row * (SLOT_H + SLOT_GAP),
+        SLOT_W,
+        SLOT_H
+    };
+}
 
 CraftingSystem::CraftingSystem(Textures& tex, TTF_Font* font)
     : tex(tex), font(font) {}
@@ -59,17 +85,9 @@ bool CraftingSystem::craft_selected(Inventory& inv) {
 
 void CraftingSystem::select_by_mouse(float mx, float my, const SDL_FRect& panel_rect) {
     hovered = -1;
-    float list_x = panel_rect.x + PANEL_PAD;
-    float list_y = panel_rect.y + PANEL_PAD + 18.0f;
-
     for (int i = 0; i < (int)recipes.size(); ++i) {
-        SDL_FRect row = {
-            list_x,
-            list_y + i * LIST_ROW_H,
-            panel_rect.w * 0.42f,
-            LIST_ROW_H - 3.0f
-        };
-        if (mx >= row.x && mx <= row.x + row.w && my >= row.y && my <= row.y + row.h) {
+        SDL_FRect r = slot_rect(panel_rect, i);
+        if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
             hovered = i;
             return;
         }
@@ -80,42 +98,16 @@ void CraftingSystem::update(float, float) {}
 
 void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect) {
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
-
     float mx = (float)e.button.x;
     float my = (float)e.button.y;
 
-    float list_x = panel_rect.x + PANEL_PAD;
-    float list_y = panel_rect.y + PANEL_PAD + 18.0f;
-    float list_w = panel_rect.w * 0.42f;
-
     for (int i = 0; i < (int)recipes.size(); ++i) {
-        SDL_FRect row = {
-            list_x,
-            list_y + i * LIST_ROW_H,
-            list_w,
-            LIST_ROW_H - 3.0f
-        };
-
-        if (mx >= row.x && mx <= row.x + row.w && my >= row.y && my <= row.y + row.h) {
+        SDL_FRect r = slot_rect(panel_rect, i);
+        if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
             selected = i;
+            craft_selected(inv);
             return;
         }
-    }
-
-    if (selected < 0 || selected >= (int)recipes.size()) return;
-
-    float detail_x = panel_rect.x + list_w + PANEL_PAD * 2.0f;
-    float detail_w = panel_rect.w - (detail_x - panel_rect.x) - PANEL_PAD;
-    SDL_FRect detail = {
-        detail_x,
-        panel_rect.y + PANEL_PAD + 18.0f,
-        detail_w,
-        panel_rect.h - PANEL_PAD * 2.0f - 18.0f
-    };
-    SDL_FRect button = { detail.x + 8.0f, detail.y + detail.h - 34.0f, 92.0f, 24.0f };
-
-    if (mx >= button.x && mx <= button.x + button.w && my >= button.y && my <= button.y + button.h) {
-        craft_selected(inv);
     }
 }
 
@@ -128,10 +120,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     SDL_RenderRect(renderer, &panel_rect);
 
     SDL_Color white = {238, 240, 243, 255};
-    SDL_Color muted = {166, 172, 180, 255};
-    SDL_Color good = {156, 206, 164, 255};
-    SDL_Color bad = {216, 102, 102, 255};
-    SDL_Color yellow = {220, 196, 134, 255};
+    SDL_Color muted = {120, 126, 134, 255};
 
     TextRenderer::DrawText(renderer, font, panel_rect.x + PANEL_PAD, panel_rect.y + 4.0f, "Crafting", white);
 
@@ -140,104 +129,102 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         return;
     }
 
-    float list_x = panel_rect.x + PANEL_PAD;
-    float list_y = panel_rect.y + PANEL_PAD + 18.0f;
-    float list_w = panel_rect.w * 0.42f;
-    float detail_x = panel_rect.x + list_w + PANEL_PAD * 2.0f;
-    float detail_w = panel_rect.w - (detail_x - panel_rect.x) - PANEL_PAD;
-
     for (int i = 0; i < (int)recipes.size(); ++i) {
         const Recipe& r = recipes[i];
-        bool can = can_craft(inv, r);
+        SDL_FRect slot = slot_rect(panel_rect, i);
+        int cnt = craft_count(inv, r);
+        bool can = (cnt > 0);
         bool sel = (i == selected);
         bool hov = (i == hovered);
 
-        SDL_FRect row = {
-            list_x,
-            list_y + i * LIST_ROW_H,
-            list_w,
-            LIST_ROW_H - 3.0f
-        };
+        if (tex.crafting_slot) {
+            SDL_RenderTexture(renderer, tex.crafting_slot, nullptr, &slot);
+        } 
+        
+        else {
+            SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
+            SDL_RenderFillRect(renderer, &slot);
+        }
 
-        if (sel) SDL_SetRenderDrawColor(renderer, 54, 58, 66, 255);
-        else if (hov) SDL_SetRenderDrawColor(renderer, 32, 35, 41, 255);
-        else SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
-
-        SDL_RenderFillRect(renderer, &row);
-        SDL_SetRenderDrawColor(renderer, 34, 37, 44, 255);
-        SDL_RenderRect(renderer, &row);
-
-        SDL_FRect icon = { row.x + 4.0f, row.y + 5.0f, ICON_BOX, ICON_BOX };
-        SDL_SetRenderDrawColor(renderer, 10, 11, 13, 255);
-        SDL_RenderFillRect(renderer, &icon);
+        if (!can) {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 8, 8, 10, 180);
+            SDL_RenderFillRect(renderer, &slot);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        } 
+        
+        else if (sel || hov) {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, sel ? 30 : 15);
+            SDL_RenderFillRect(renderer, &slot);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        }
 
         if (r.result_texture) {
-            SDL_FRect dst = { icon.x + 2.0f, icon.y + 2.0f, icon.w - 4.0f, icon.h - 4.0f };
-            SDL_RenderTexture(renderer, r.result_texture, nullptr, &dst);
+            float pad = 6.0f;
+            SDL_FRect icon = { slot.x + pad, slot.y + pad, slot.w - pad * 2, slot.h - pad * 2 };
+
+            if (!can) SDL_SetTextureAlphaMod(r.result_texture, 80);
+            SDL_RenderTexture(renderer, r.result_texture, nullptr, &icon);
+            if (!can) SDL_SetTextureAlphaMod(r.result_texture, 255);
         }
 
-        TextRenderer::DrawText(renderer, font, row.x + 34.0f, row.y + 4.0f, r.name, can ? white : muted);
+        if (font) {
+            char buf[8];
+            snprintf(buf, sizeof(buf), "%d", cnt);
 
-        char line[64];
-        snprintf(line, sizeof(line), "x%d", r.result_amount);
-        TextRenderer::DrawText(renderer, font, row.x + 34.0f, row.y + 18.0f, line, muted);
+            float fh = (float)TTF_GetFontHeight(font);
+
+            float bw = (cnt >= 10) ? 20.0f : 13.0f;
+            SDL_FRect nb = {
+                slot.x + slot.w - bw - 2.0f,
+                slot.y + slot.h - fh - 2.0f,
+                bw, fh
+            };
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 5, 5, 7, 180);
+            SDL_RenderFillRect(renderer, &nb);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+            SDL_Color cnt_col = can
+                ? SDL_Color{220, 196, 134, 255}
+                : SDL_Color{100, 104, 110, 255};
+
+            TextRenderer::DrawText(renderer, font, nb.x + 2.0f, nb.y, buf, cnt_col);
+        }
+
+        if (sel) {
+            SDL_SetRenderDrawColor(renderer, 220, 196, 134, 200);
+            SDL_RenderRect(renderer, &slot);
+        }
     }
 
-    if (selected < 0 || selected >= (int)recipes.size()) return;
+    if (hovered >= 0 && hovered < (int)recipes.size() && font) {
+        const Recipe& r = recipes[hovered];
+        SDL_FRect slot = slot_rect(panel_rect, hovered);
 
-    const Recipe& r = recipes[selected];
-    bool craftable = can_craft(inv, r);
+        const char* name = r.name.c_str();
+        int tw = 0, th = 0;
+        TTF_GetStringSize(font, name, 0, &tw, &th);
 
-    SDL_FRect detail = {
-        detail_x,
-        panel_rect.y + PANEL_PAD + 18.0f,
-        detail_w,
-        panel_rect.h - PANEL_PAD * 2.0f - 18.0f
-    };
+        float pad = 4.0f;
+        float tip_w = (float)tw + pad * 2;
+        float tip_h = (float)th + pad * 2;
+        float tip_x = slot.x + slot.w * 0.5f - tip_w * 0.5f;
+        float tip_y = slot.y - tip_h - 4.0f;
 
-    SDL_SetRenderDrawColor(renderer, 16, 17, 21, 255);
-    SDL_RenderFillRect(renderer, &detail);
-    SDL_SetRenderDrawColor(renderer, 42, 46, 54, 255);
-    SDL_RenderRect(renderer, &detail);
+        if (tip_x < panel_rect.x + PANEL_PAD) tip_x = panel_rect.x + PANEL_PAD;
+        if (tip_x + tip_w > panel_rect.x + panel_rect.w - PANEL_PAD)
+            tip_x = panel_rect.x + panel_rect.w - PANEL_PAD - tip_w;
 
-    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 8.0f, r.name, white);
+        SDL_FRect bg = { tip_x, tip_y, tip_w, tip_h };
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 10, 11, 14, 220);
+        SDL_RenderFillRect(renderer, &bg);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderDrawColor(renderer, 60, 65, 75, 255);
+        SDL_RenderRect(renderer, &bg);
 
-    char buf[128];
-    snprintf(buf, sizeof(buf), "Result: %s x%d", r.name.c_str(), r.result_amount);
-    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 28.0f, buf, muted);
-    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 48.0f, craftable ? "Status: can craft" : "Status: missing items", craftable ? good : bad);
-    TextRenderer::DrawText(renderer, font, detail.x + 8.0f, detail.y + 72.0f, "Ingredients:", yellow);
-
-    float y = detail.y + 92.0f;
-    for (const auto& ing : r.ingredients) {
-        bool enough = inv.get_amount(ing.type) >= ing.amount;
-
-        SDL_FRect icon = { detail.x + 8.0f, y + 1.0f, 14.0f, 14.0f };
-        SDL_SetRenderDrawColor(renderer, 10, 11, 13, 255);
-        SDL_RenderFillRect(renderer, &icon);
-
-        SDL_Texture* icon_tex = nullptr;
-        switch (ing.type) {
-            case ItemType::STONE: icon_tex = tex.stone; break;
-            case ItemType::IRON_ORE: icon_tex = tex.iron_ore; break;
-            case ItemType::FURNACE: icon_tex = tex.furnace; break;
-            default: break;
-        }
-
-        if (icon_tex) {
-            SDL_FRect dst = { icon.x + 1.0f, icon.y + 1.0f, 12.0f, 12.0f };
-            SDL_RenderTexture(renderer, icon_tex, nullptr, &dst);
-        }
-
-        snprintf(buf, sizeof(buf), "%s  %d", item_type_name(ing.type), ing.amount);
-        TextRenderer::DrawText(renderer, font, detail.x + 28.0f, y - 1.0f, buf, enough ? white : bad);
-        y += 18.0f;
+        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, name, {238, 240, 243, 255});
     }
-
-    SDL_FRect button = { detail.x + 8.0f, detail.y + detail.h - 34.0f, 92.0f, 24.0f };
-    SDL_SetRenderDrawColor(renderer, craftable ? 38 : 28, craftable ? 38 : 30, craftable ? 42 : 34, 255);
-    SDL_RenderFillRect(renderer, &button);
-    SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
-    SDL_RenderRect(renderer, &button);
-    TextRenderer::DrawText(renderer, font, button.x + 17.0f, button.y + 4.0f, "Craft", white);
 }

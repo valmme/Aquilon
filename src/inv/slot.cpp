@@ -139,10 +139,12 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
     }
 
     if (selected) {
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 220, 196, 134, 38);
         SDL_RenderFillRect(renderer, &dest);
         SDL_SetRenderDrawColor(renderer, 220, 196, 134, 120);
         SDL_RenderRect(renderer, &dest);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
     }
 
     if (pressed) {
