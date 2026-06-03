@@ -483,7 +483,7 @@ int main() {
                 right_hold_blocked = false;
             }
 
-            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) {
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT && !inv.open) {
                 float mouse_x = 0.0f, mouse_y = 0.0f;
                 SDL_GetMouseState(&mouse_x, &mouse_y);
 
@@ -642,7 +642,7 @@ int main() {
         inv.draw(renderer, debug_font.get());
 
         const Item* dragged = inv.cursor_item;
-        if (dragged && dragged->can_place) {
+        if (!inv.open && dragged && dragged->can_place) {
             int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
             int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
 
