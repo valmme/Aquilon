@@ -11,8 +11,8 @@ static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {6, 7, 9, 210};
 static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {155, 160, 168, 255};
 static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {242, 244, 246, 255};
 
-GUIWindow::GUIWindow(float x, float y, float width, float height, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
-    : position({x, y}), size({width, height}), title(title),
+GUIWindow::GUIWindow(Vec2 position, Vec2 size, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
+    : position(position), size(size), title(title),
       background_color(GUI_BG_COLOR),
       border_color(GUI_BORDER_COLOR),
       border_width(1.0f),
@@ -38,39 +38,39 @@ GUIWindow::~GUIWindow() {
     }
 }
 
-void GUIWindow::set_background_color(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+void GUIWindow::SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
     background_color = SDL_Color{r, g, b, a};
 }
 
-void GUIWindow::set_border_color(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
+void GUIWindow::SetBorderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
     border_color = SDL_Color{r, g, b, a};
 }
 
-void GUIWindow::set_border_width(float width) {
+void GUIWindow::SetBorderWidth(float width) {
     border_width = width;
 }
 
-void GUIWindow::set_title(const std::string& new_title) {
+void GUIWindow::SetTitle(const std::string& new_title) {
     title = new_title;
 }
 
-void GUIWindow::set_title_font(TTF_Font* font) {
+void GUIWindow::SetTitleFont(TTF_Font* font) {
     title_font = font;
 }
 
-void GUIWindow::set_chrome_visible(bool visible) {
+void GUIWindow::SetChromeVisible(bool visible) {
     chrome_visible = visible;
 }
 
-void GUIWindow::set_visible(bool is_visible) {
+void GUIWindow::SetVisible(bool is_visible) {
     visible = is_visible;
 }
 
-void GUIWindow::set_content_draw_callback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback) {
+void GUIWindow::SetContentDrawCallback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback) {
     content_draw_callback = callback;
 }
 
-bool GUIWindow::handle_event(const SDL_Event& e) {
+bool GUIWindow::HandleEvent(const SDL_Event& e) {
     if (closed || !visible) {
         return false;
     }
@@ -85,7 +85,7 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
             float mouse_x = (float)button.x;
             float mouse_y = (float)button.y;
             SDL_FRect title_rect = {position.x + border_width, position.y + border_width, size.x - border_width * 2.0f, title_bar_height};
-            SDL_FRect close_rect = get_close_button_rect();
+            SDL_FRect close_rect = GetCloseButtonRect();
             if (mouse_x >= close_rect.x && mouse_x <= close_rect.x + close_rect.w &&
                 mouse_y >= close_rect.y && mouse_y <= close_rect.y + close_rect.h) {
                 close_button_pressed = true;
@@ -109,7 +109,7 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
         const SDL_MouseButtonEvent& button = e.button;
         float mouse_x = (float)button.x;
         float mouse_y = (float)button.y;
-        SDL_FRect close_rect = get_close_button_rect();
+        SDL_FRect close_rect = GetCloseButtonRect();
         if (button.button == SDL_BUTTON_LEFT && close_button_pressed) {
             if (mouse_x >= close_rect.x && mouse_x <= close_rect.x + close_rect.w &&
                 mouse_y >= close_rect.y && mouse_y <= close_rect.y + close_rect.h) {
@@ -138,7 +138,7 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
         if (close_button_pressed) {
             float mouse_x = (float)motion.x;
             float mouse_y = (float)motion.y;
-            SDL_FRect close_rect = get_close_button_rect();
+            SDL_FRect close_rect = GetCloseButtonRect();
 
             if (mouse_x < close_rect.x || mouse_x > close_rect.x + close_rect.w ||
                 mouse_y < close_rect.y || mouse_y > close_rect.y + close_rect.h) {
@@ -157,30 +157,30 @@ bool GUIWindow::handle_event(const SDL_Event& e) {
     return false;
 }
 
-void GUIWindow::draw_filled_rect(SDL_Renderer* renderer, float x, float y, float w, float h, const SDL_Color& color) {
+void GUIWindow::DrawFilledRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_FRect rect = {x, y, w, h};
+    SDL_FRect rect = {position.x, position.y, size.x, size.y};
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void GUIWindow::draw_rect(SDL_Renderer* renderer, float x, float y, float w, float h, const SDL_Color& color, float thickness) {
+void GUIWindow::DrawRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color, float thickness) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     
-    SDL_FRect top = {x, y, w, thickness};
+    SDL_FRect top = {position.x, position.y, size.x, thickness};
     SDL_RenderFillRect(renderer, &top);
     
-    SDL_FRect bottom = {x, y + h - thickness, w, thickness};
+    SDL_FRect bottom = {position.x, position.y + size.y - thickness, size.x, thickness};
     SDL_RenderFillRect(renderer, &bottom);
     
-    SDL_FRect left = {x, y, thickness, h};
+    SDL_FRect left = {position.x, position.y, thickness, size.y};
     SDL_RenderFillRect(renderer, &left);
     
-    SDL_FRect right = {x + w - thickness, y, thickness, h};
+    SDL_FRect right = {position.x + size.x - thickness, position.y, thickness, size.y};
     SDL_RenderFillRect(renderer, &right);
 }
 
 
-void GUIWindow::draw_title(SDL_Renderer* renderer) {
+void GUIWindow::DrawTitle(SDL_Renderer* renderer) {
     if (!chrome_visible || title.empty()) return;
 
     float padding = 6.0f;
@@ -194,7 +194,7 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
     SDL_FRect title_line = {position.x + border_width, position.y + border_width + title_bar_height - 1.0f, available_width, 1.0f};
     SDL_RenderFillRect(renderer, &title_line);
 
-    draw_close_button(renderer);
+    DrawCloseButton(renderer);
 
     if (!title_font) return;
 
@@ -214,7 +214,7 @@ void GUIWindow::draw_title(SDL_Renderer* renderer) {
     }
 }
 
-void GUIWindow::render(SDL_Renderer* renderer) {
+void GUIWindow::Render(SDL_Renderer* renderer) {
     if (closed || !visible) {
         return;
     }
@@ -225,21 +225,21 @@ void GUIWindow::render(SDL_Renderer* renderer) {
     float inner_h = size.y - border_width * 2.0f;
 
     if (inner_w > 0.0f && inner_h > 0.0f) {
-        draw_filled_rect(renderer, inner_x, inner_y, inner_w, inner_h, background_color);
+        DrawFilledRect(renderer, {inner_x, inner_y}, {inner_w, inner_h}, background_color);
     }
 
     if (content_draw_callback) {
-        SDL_FRect content_rect = get_content_rect();
+        SDL_FRect content_rect = GetContentRect();
         content_draw_callback(renderer, content_rect);
     }
 
-    draw_rect(renderer, position.x, position.y, size.x, size.y, border_color, border_width);
+    DrawRect(renderer, {position.x, position.y}, size, border_color, border_width);
     if (chrome_visible) {
-        draw_title(renderer);
+        DrawTitle(renderer);
     }
 }
 
-SDL_FRect GUIWindow::get_content_rect() const {
+SDL_FRect GUIWindow::GetContentRect() const {
     float content_x = position.x + border_width;
     float content_y = position.y + border_width + (chrome_visible ? title_bar_height : 0.0f);
     float content_w = size.x - border_width * 2.0f;
@@ -247,15 +247,15 @@ SDL_FRect GUIWindow::get_content_rect() const {
     return {content_x, content_y, content_w, content_h};
 }
 
-bool GUIWindow::is_closed() const {
+bool GUIWindow::IsClosed() const {
     return closed;
 }
 
-void GUIWindow::set_close_callback(const std::function<void()>& callback) {
+void GUIWindow::SetCloseCallback(const std::function<void()>& callback) {
     close_callback = callback;
 }
 
-SDL_FRect GUIWindow::get_close_button_rect() const {
+SDL_FRect GUIWindow::GetCloseButtonRect() const {
     return {
         position.x + size.x - border_width - close_button_size - 6.0f,
         position.y + border_width + (title_bar_height - close_button_size) * 0.5f,
@@ -264,8 +264,8 @@ SDL_FRect GUIWindow::get_close_button_rect() const {
     };
 }
 
-void GUIWindow::draw_close_button(SDL_Renderer* renderer) {
-    close_button_rect = get_close_button_rect();
+void GUIWindow::DrawCloseButton(SDL_Renderer* renderer) {
+    close_button_rect = GetCloseButtonRect();
     
     SDL_Color icon_color = close_button_pressed ? GUI_CLOSE_ICON_PRESSED_COLOR : GUI_CLOSE_ICON_COLOR;
     SDL_SetRenderDrawColor(renderer, icon_color.r, icon_color.g, icon_color.b, icon_color.a);
@@ -282,7 +282,7 @@ void GUIWindow::draw_close_button(SDL_Renderer* renderer) {
                    (int)(close_button_rect.y + close_button_rect.h - inset));
 }
 
-static TTF_Font* load_default_font() {
+static TTF_Font* LoadDefaultFont() {
     const char* font_paths[] = {
         "resources/fonts/arial.ttf",
         nullptr
@@ -305,7 +305,7 @@ GUIEngine::GUIEngine(SDL_Renderer* renderer)
         Logger::Log("UI", Logger::Level::Error,
                     "Failed to initialize SDL_ttf: %s", SDL_GetError());
     } else {
-        title_font = load_default_font();
+        title_font = LoadDefaultFont();
         if (!title_font) {
             Logger::Log("UI", Logger::Level::Warn,
                         "SDL_ttf font not found; title text will not render.");
@@ -333,30 +333,30 @@ GUIEngine::~GUIEngine() {
     TTF_Quit();
 }
 
-GUIWindow* GUIEngine::create_window(float x, float y, float width, float height, const std::string& title) {
+GUIWindow* GUIEngine::CreateWindow(Vec2 position, Vec2 size, const std::string& title) {
     if (main_window) {
         delete main_window;
     }
-    main_window = new GUIWindow(x, y, width, height, title, title_font, renderer);
+    main_window = new GUIWindow(position, size, title, title_font, renderer);
     return main_window;
 }
 
-GUIWindow* GUIEngine::create_info_window(float x, float y, float width, float height) {
+GUIWindow* GUIEngine::CreateInfoWindow(Vec2 position, Vec2 size) {
     if (info_window) {
         delete info_window;
     }
 
-    info_window = new GUIWindow(x, y, width, height, "", title_font, renderer);
-    info_window->set_chrome_visible(false);
+    info_window = new GUIWindow(position, size, "", title_font, renderer);
+    info_window->SetChromeVisible(false);
     return info_window;
 }
 
-bool GUIEngine::handle_event(const SDL_Event& e) {
+bool GUIEngine::HandleEvent(const SDL_Event& e) {
     bool consumed = false;
 
     if (inv_window) {
-        consumed = inv_window->handle_event(e);
-        if (inv_window->is_closed()) {
+        consumed = inv_window->HandleEvent(e);
+        if (inv_window->IsClosed()) {
             delete inv_window;
             inv_window = nullptr;
             return true;
@@ -366,8 +366,8 @@ bool GUIEngine::handle_event(const SDL_Event& e) {
     }
 
     if (main_window) {
-        consumed = main_window->handle_event(e);
-        if (main_window->is_closed()) {
+        consumed = main_window->HandleEvent(e);
+        if (main_window->IsClosed()) {
             delete main_window;
             main_window = nullptr;
             return true;
@@ -379,38 +379,38 @@ bool GUIEngine::handle_event(const SDL_Event& e) {
     return consumed;
 }
 
-void GUIEngine::render_all() {
-    if (main_window) main_window->render(renderer);
-    if (inv_window) inv_window->render(renderer);
-    if (info_window) info_window->render(renderer);
+void GUIEngine::RenderAll() {
+    if (main_window) main_window->Render(renderer);
+    if (inv_window) inv_window->Render(renderer);
+    if (info_window) info_window->Render(renderer);
 }
 
-void GUIEngine::clear_windows() {
+void GUIEngine::ClearWindows() {
     if (main_window) {
         delete main_window;
         main_window = nullptr;
     }
 }
 
-GUIWindow* GUIEngine::get_window() const {
+GUIWindow* GUIEngine::GetWindow() const {
     return main_window;
 }
 
-GUIWindow* GUIEngine::create_inv_window(float x, float y, float w, float h, const std::string& title) {
+GUIWindow* GUIEngine::CreateInvWindow(Vec2 position, Vec2 size, const std::string& title) {
     if (inv_window) delete inv_window;
 
-    inv_window = new GUIWindow(x, y, w, h, title, title_font, renderer);
+    inv_window = new GUIWindow(position, size, title, title_font, renderer);
     return inv_window;
 }
 
-void GUIEngine::close_inv_window() {
+void GUIEngine::CloseInvWindow() {
     if (inv_window) {
         delete inv_window;
         inv_window = nullptr;
     }
 }
 
-void GUIEngine::close_info_window() {
+void GUIEngine::CloseInfoWindow() {
     if (info_window) {
         delete info_window;
         info_window = nullptr;

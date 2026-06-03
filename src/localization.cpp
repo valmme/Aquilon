@@ -73,13 +73,13 @@ void CommitEntry(SectionMap& sections, std::uint64_t section_hash, std::uint64_t
 }
 } // namespace
 
-std::uint64_t hash(std::string_view text) {
+std::uint64_t Hash(std::string_view text) {
     return HashBytes(text.data(), text.size());
 }
 
-std::uint64_t hash(const char* text) {
+std::uint64_t Hash(const char* text) {
     if (!text) {
-        return hash(std::string_view{});
+        return Hash(std::string_view{});
     }
 
     return HashBytes(text, std::char_traits<char>::length(text));
@@ -100,7 +100,7 @@ bool LoadLocalization(const std::string& path) {
     bool in_header = true;
     int header_line = 0;
     std::string current_section_name;
-    std::uint64_t current_section_hash = hash("");
+    std::uint64_t current_section_hash = Hash("");
     std::string pending_source;
     std::uint64_t pending_key_hash = 0;
     bool have_pending = false;
@@ -126,7 +126,7 @@ bool LoadLocalization(const std::string& path) {
             commit_pending();
             in_header = false;
             current_section_name = Trim(trimmed.substr(1, trimmed.size() - 2));
-            current_section_hash = hash(current_section_name);
+            current_section_hash = Hash(current_section_name);
             continue;
         }
 
@@ -169,7 +169,7 @@ bool LoadLocalization(const std::string& path) {
         }
 
         pending_source = trimmed;
-        pending_key_hash = hash(trimmed);
+        pending_key_hash = Hash(trimmed);
         have_pending = true;
     }
 
@@ -217,8 +217,8 @@ std::string FindString(std::uint64_t key_hash, std::uint64_t section_hash) {
         return entry->translation.empty() ? entry->source : entry->translation;
     }
 
-    if (section_hash != hash("")) {
-        if (const LocalizedEntry* entry = find_in_section(hash(""))) {
+    if (section_hash != Hash("")) {
+        if (const LocalizedEntry* entry = find_in_section(Hash(""))) {
             return entry->translation.empty() ? entry->source : entry->translation;
         }
     }
@@ -227,7 +227,7 @@ std::string FindString(std::uint64_t key_hash, std::uint64_t section_hash) {
 }
 
 std::string Localize(std::string_view text, std::string_view section) {
-    const std::string translated = FindString(hash(text), hash(section));
+    const std::string translated = FindString(Hash(text), Hash(section));
     if (!translated.empty()) {
         return translated;
     }

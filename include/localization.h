@@ -12,13 +12,13 @@ struct LocalizationInfo {
     std::string code;
 };
 
-std::uint64_t hash(std::string_view text);
-std::uint64_t hash(const char* text);
+std::uint64_t Hash(std::string_view text);
+std::uint64_t Hash(const char* text);
 
 bool LoadLocalization(const std::string& path);
 const LocalizationInfo& GetLocalizationInfo();
 
-std::string FindString(std::uint64_t key_hash, std::uint64_t section_hash = hash(""));
+std::string FindString(std::uint64_t key_hash, std::uint64_t section_hash = Hash(""));
 std::string Localize(std::string_view text, std::string_view section = {});
 
 #endif // AQUILON_LOCALIZATION_H

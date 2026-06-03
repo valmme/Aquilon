@@ -1,5 +1,11 @@
 #include "player.h"
 
+#include "player.h"
+#include "inv/inventory.h"
+#include "inv/item.h"
+#include "textures.h"
+#include "gen/world.h"
+
 Player::Player(const InputConfig& input) : input(input) {
     player = { 0.0f, 0.0f, 32, 32 };
     speed = 250.0f;
@@ -54,8 +60,117 @@ void Player::update_animation(float delta_time) {
 
 
 void Player::render(SDL_Renderer* renderer, const Camera& cam) {
-    SDL_FRect screen_rect = cam.WorldToScreenRect(player.x, player.y, player.w, player.h);
+    SDL_FRect screen_rect = cam.world_to_screen_rect(player.x, player.y, player.w, player.h);
 
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
     SDL_RenderFillRect(renderer, &screen_rect);
+}
+
+bool Player::is_mining() const {
+    return mining.active;
+}
+
+float Player::mining_duration_for(TileType type) {
+    switch (type) {
+        case STONE: return 0.80f;
+        case IRON_ORE: return 1.10f;
+        default: return 0.0f;
+    }
+}
+
+bool Player::is_mineable(TileType type) {
+    return type == STONE || type == IRON_ORE;
+}
+
+Item* Player::make_drop_for_tile(const Tile& tile, const Textures& textures) {
+    switch (tile.type) {
+        case STONE:
+            return new Item{ItemType::STONE, "Stone", 1, textures.stone};
+        case IRON_ORE:
+            return new Item{ItemType::IRON_ORE, "Iron Ore", 1, textures.iron_ore};
+        default:
+            return nullptr;
+    }
+}
+
+void Player::start_mining(int tile_x, int tile_y, TileType tile_type) {
+    mining.active = true;
+    mining.tile_x = tile_x;
+    mining.tile_y = tile_y;
+    mining.tile_type = tile_type;
+    mining.duration = mining_duration_for(tile_type);
+    mining.progress = 0.0f;
+}
+
+void Player::stop_mining() {
+    mining.active = false;
+    mining.progress = 0.0f;
+}
+
+void Player::update_mining(float delta_time, World& world, Inventory& inventory, const Textures& textures) {
+    if (!mining.active) {
+        return;
+    }
+
+    Tile mined_tile = world.get_tile(mining.tile_x, mining.tile_y);
+    if (mined_tile.type != mining.tile_type || !is_mineable(mined_tile.type)) {
+        stop_mining();
+        return;
+    }
+
+    mining.progress += delta_time;
+    if (mining.progress < mining.duration) {
+        return;
+    }
+
+    Tile current = world.get_tile(mining.tile_x, mining.tile_y);
+    if (current.yield > 0) {
+        current.yield -= 1;
+
+        if (Item* drop = make_drop_for_tile(mined_tile, textures)) {
+            inventory.pick(drop);
+        }
+
+        if (current.yield <= 0) {
+            current = Tile{EMPTY, false, 0};
+        }
+
+        world.set_tile(mining.tile_x, mining.tile_y, current);
+    }
+
+    stop_mining();
+}
+
+void Player::draw_mining_progress_bar(SDL_Renderer* renderer, int win_w, int win_h) const {
+    if (!renderer || !mining.active || mining.duration <= 0.0f) {
+        return;
+    }
+
+    float progress = mining.progress / mining.duration;
+    if (progress < 0.0f) progress = 0.0f;
+    if (progress > 1.0f) progress = 1.0f;
+
+    float bar_w = (float)(win_w - 48);
+    if (bar_w > 420.0f) bar_w = 420.0f;
+    if (bar_w < 0.0f) bar_w = 0.0f;
+    const float bar_x = ((float)win_w - bar_w) * 0.5f;
+    const float bar_y = (float)win_h - 20.0f;
+    const float bar_h = 6.0f;
+
+    SDL_SetRenderDrawColor(renderer, 12, 15, 18, 220);
+    SDL_FRect bg = {bar_x, bar_y, bar_w, bar_h};
+    SDL_RenderFillRect(renderer, &bg);
+
+    SDL_SetRenderDrawColor(renderer, 58, 66, 76, 220);
+    SDL_FRect top = {bar_x, bar_y, bar_w, 1.0f};
+    SDL_FRect bottom = {bar_x, bar_y + bar_h - 1.0f, bar_w, 1.0f};
+    SDL_RenderFillRect(renderer, &top);
+    SDL_RenderFillRect(renderer, &bottom);
+
+    const float fill_w = (bar_w - 2.0f) * progress;
+    if (fill_w > 0.0f) {
+        SDL_SetRenderDrawColor(renderer, 216, 176, 80, 255);
+        SDL_FRect fill = {bar_x + 1.0f, bar_y + 1.0f, fill_w, bar_h - 2.0f};
+        SDL_RenderFillRect(renderer, &fill);
+    }
 }

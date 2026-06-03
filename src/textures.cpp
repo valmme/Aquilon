@@ -2,7 +2,7 @@
 #include "logger.h"
 #include <cstdio>
 
-static SDL_Texture* load_texture(SDL_Renderer* renderer, const char* label, const char* file) {
+static SDL_Texture* LoadTexture(SDL_Renderer* renderer, const char* label, const char* file) {
     SDL_Texture* tex = IMG_LoadTexture(renderer, file);
 
     if (!tex) {
@@ -17,7 +17,7 @@ static SDL_Texture* load_texture(SDL_Renderer* renderer, const char* label, cons
         return tex;
     }
 
-    SDL_Texture* fallback = load_texture(renderer, "none", "resources/textures/none.png");
+    SDL_Texture* fallback = LoadTexture(renderer, "none", "resources/textures/none.png");
     if (!fallback) {
         Logger::Log("APPLICATION", Logger::Level::Fatal,
                     "Fallback texture could not be created for '%s'.",
@@ -26,7 +26,7 @@ static SDL_Texture* load_texture(SDL_Renderer* renderer, const char* label, cons
     return fallback;
 }
 
-Textures load_textures(SDL_Renderer* renderer) {
+Textures LoadTextures(SDL_Renderer* renderer) {
     Textures t{};
 
     t.none = IMG_LoadTexture(renderer, "resources/textures/none.png");
@@ -38,22 +38,22 @@ Textures load_textures(SDL_Renderer* renderer) {
     }
 
     // tiles
-    t.ice      = load_texture(renderer, "ice", "resources/textures/ice.png");
-    t.snow     = load_texture(renderer, "snow", "resources/textures/snow.png");
-    t.stone    = load_texture(renderer, "stone", "resources/textures/stone.png");
-    t.iron_ore = load_texture(renderer, "iron_ore", "resources/textures/iron_ore.png");
-    t.furnace  = load_texture(renderer, "furnace", "resources/textures/furnace.png");
+    t.ice      = LoadTexture(renderer, "ice", "resources/textures/ice.png");
+    t.snow     = LoadTexture(renderer, "snow", "resources/textures/snow.png");
+    t.stone    = LoadTexture(renderer, "stone", "resources/textures/stone.png");
+    t.iron_ore = LoadTexture(renderer, "iron_ore", "resources/textures/iron_ore.png");
+    t.furnace  = LoadTexture(renderer, "furnace", "resources/textures/furnace.png");
 
     // ui
-    t.slot          = load_texture(renderer, "slot", "resources/textures/slot.png");
-    t.crafting_slot = load_texture(renderer, "crafting_slot", "resources/textures/crafting_slot.png");
+    t.slot          = LoadTexture(renderer, "slot", "resources/textures/slot.png");
+    t.crafting_slot = LoadTexture(renderer, "crafting_slot", "resources/textures/crafting_slot.png");
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
 
     return t;
 }
 
-void free_textures(Textures& t) {
+void FreeTextures(Textures& t) {
     if (t.ice) SDL_DestroyTexture(t.ice);
     if (t.snow) SDL_DestroyTexture(t.snow);
     if (t.stone) SDL_DestroyTexture(t.stone);

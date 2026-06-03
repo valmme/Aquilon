@@ -13,7 +13,7 @@ public:
     bool selected = false;
     bool pressed = false;
 
-    Slot(float x, float y);
+    Slot(Vec2 position);
 
     void update(Item*& cursor_item, const SDL_Event& e);
     void draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const;

@@ -16,24 +16,24 @@ public:
     float border_width;
     std::string title;
 
-    GUIWindow(float x, float y, float width, float height, 
+    GUIWindow(Vec2 position, Vec2 size, 
               const std::string& title = "", TTF_Font* title_font = nullptr,
               SDL_Renderer* renderer = nullptr);
     ~GUIWindow();
     
-    void set_background_color(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
-    void set_border_color(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
-    void set_border_width(float width);
-    void set_title(const std::string& new_title);
-    void set_title_font(TTF_Font* font);
-    void set_chrome_visible(bool visible);
-    void set_visible(bool visible);
-    void set_content_draw_callback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback);
-    void set_close_callback(const std::function<void()>& callback);
-    bool handle_event(const SDL_Event& e);
-    bool is_closed() const;
-    void render(SDL_Renderer* renderer);
-    SDL_FRect get_content_rect() const;
+    void SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
+    void SetBorderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
+    void SetBorderWidth(float width);
+    void SetTitle(const std::string& new_title);
+    void SetTitleFont(TTF_Font* font);
+    void SetChromeVisible(bool visible);
+    void SetVisible(bool visible);
+    void SetContentDrawCallback(const std::function<void(SDL_Renderer*, const SDL_FRect&)>& callback);
+    void SetCloseCallback(const std::function<void()>& callback);
+    bool HandleEvent(const SDL_Event& e);
+    bool IsClosed() const;
+    void Render(SDL_Renderer* renderer);
+    SDL_FRect GetContentRect() const;
 
 private:
     TTF_Font* title_font;
@@ -51,11 +51,11 @@ private:
     std::function<void(SDL_Renderer*, const SDL_FRect&)> content_draw_callback;
     std::function<void()> close_callback;
 
-    SDL_FRect get_close_button_rect() const;
-    void draw_close_button(SDL_Renderer* renderer);
-    void draw_filled_rect(SDL_Renderer* renderer, float x, float y, float w, float h, const SDL_Color& color);
-    void draw_rect(SDL_Renderer* renderer, float x, float y, float w, float h, const SDL_Color& color, float thickness);
-    void draw_title(SDL_Renderer* renderer);
+    SDL_FRect GetCloseButtonRect() const;
+    void DrawCloseButton(SDL_Renderer* renderer);
+    void DrawFilledRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color);
+    void DrawRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color, float thickness);
+    void DrawTitle(SDL_Renderer* renderer);
 };
 
 class GUIEngine {
@@ -63,17 +63,17 @@ public:
     GUIEngine(SDL_Renderer* renderer);
     ~GUIEngine();
     
-    GUIWindow* create_window(float x, float y, float width, float height, const std::string& title = "");
-    GUIWindow* create_info_window(float x, float y, float width, float height);
-    void render_all();
-    void clear_windows();
-    bool handle_event(const SDL_Event& e);
-    GUIWindow* get_window() const;
+    GUIWindow* CreateWindow(Vec2 position, Vec2 size, const std::string& title = "");
+    GUIWindow* CreateInfoWindow(Vec2 position, Vec2 size);
+    void RenderAll();
+    void ClearWindows();
+    bool HandleEvent(const SDL_Event& e);
+    GUIWindow* GetWindow() const;
 
     // inventory
-    GUIWindow* create_inv_window(float x, float y, float w, float h, const std::string& title);
-    void close_inv_window();
-    void close_info_window();
+    GUIWindow* CreateInvWindow(Vec2 position, Vec2 size, const std::string& title);
+    void CloseInvWindow();
+    void CloseInfoWindow();
 
 private:
     SDL_Renderer* renderer;

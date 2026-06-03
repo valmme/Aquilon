@@ -4,6 +4,12 @@
 #include "SDL3/SDL.h"
 #include "vmath.h"
 #include "config.h"
+#include "gen/tile.h"
+
+class World;
+class Inventory;
+struct Textures;
+struct Item;
 
 struct Camera {
     float x = 0;
@@ -40,15 +46,15 @@ struct Camera {
         last_player_cy = player_cy;
     }
 
-    SDL_FPoint WorldToScreen(float world_x, float world_y) const {
+    SDL_FPoint world_to_screen(float world_x, float world_y) const {
         SDL_FPoint p;
         p.x = (world_x - x) * zoom;
         p.y = (world_y - y) * zoom;
         return p;
     }
 
-    SDL_FRect WorldToScreenRect(float world_x, float world_y, float w, float h) const {
-        SDL_FPoint p = WorldToScreen(world_x, world_y);
+    SDL_FRect world_to_screen_rect(float world_x, float world_y, float w, float h) const {
+        SDL_FPoint p = world_to_screen(world_x, world_y);
         SDL_FRect r;
         r.x = p.x;
         r.y = p.y;
@@ -60,11 +66,25 @@ struct Camera {
 
 class Player {
 public:
+    struct MiningState {
+        bool active = false;
+        int tile_x = 0;
+        int tile_y = 0;
+        TileType tile_type = EMPTY;
+        float duration = 0.0f;
+        float progress = 0.0f;
+    };
+
     explicit Player(const InputConfig& input = InputConfig{});
 
     void handle_input(const SDL_Event& e);
     void update(float delta_time);
     void render(SDL_Renderer* renderer, const Camera& cam);
+    bool is_mining() const;
+    void start_mining(int tile_x, int tile_y, TileType tile_type);
+    void stop_mining();
+    void update_mining(float delta_time, World& world, Inventory& inventory, const Textures& textures);
+    void draw_mining_progress_bar(SDL_Renderer* renderer, int win_w, int win_h) const;
 
     SDL_FRect player;
 
@@ -77,8 +97,12 @@ private:
     int anim_frame;
     float anim_timer;
     float anim_speed;
+    MiningState mining;
 
     void update_animation(float delta_time);
+    static float mining_duration_for(TileType type);
+    static bool is_mineable(TileType type);
+    static Item* make_drop_for_tile(const Tile& tile, const Textures& textures);
 };
 
 #endif // AQUILON_PLAYER_H

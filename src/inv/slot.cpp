@@ -4,9 +4,9 @@
 
 static constexpr float SLOT_SIZE = 35.0f;
 
-Slot::Slot(float x, float y) {
-    dest.x = x;
-    dest.y = y;
+Slot::Slot(Vec2 position) {
+    dest.x = position.x;
+    dest.y = position.y;
     dest.w = SLOT_SIZE;
     dest.h = SLOT_SIZE;
 }
@@ -28,7 +28,7 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
 
     float mx = (float)e.button.x;
     float my = (float)e.button.y;
-    if (!point_in_rec(mx, my, dest)) return;
+    if (!PointInRec(mx, my, dest)) return;
 
     pressed = true;
 

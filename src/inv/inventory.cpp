@@ -20,7 +20,7 @@ Inventory::Inventory(GUIEngine& gui, Textures tex, TTF_Font* font, const InputCo
         for (int i = 0; i < INVENTORY_COLS; i++) {
             float x = SLOT_SPACING + i * (SLOT_SIZE + SLOT_SPACING);
             float y = SLOT_SPACING + j * (SLOT_SIZE + SLOT_SPACING);
-            slots.emplace_back(x, y);
+            slots.emplace_back(Vec2{x, y});
         }
     }
 }
@@ -31,9 +31,9 @@ Inventory::~Inventory() {
 }
 
 void Inventory::open_window() {
-    window = gui.create_inv_window(100, 150, INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H, Localize("Inventory"));
+    window = gui.CreateInvWindow(Vec2{100, 150}, Vec2{INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H}, Localize("Inventory"));
 
-    window->set_content_draw_callback([this](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+    window->SetContentDrawCallback([this](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Rect clip = {
             (int)content_rect.x,
             (int)content_rect.y,
@@ -102,14 +102,14 @@ void Inventory::open_window() {
         SDL_SetRenderClipRect(renderer, nullptr);
     });
 
-    window->set_close_callback([this]() {
+    window->SetCloseCallback([this]() {
         open = false;
         window = nullptr;
     });
 }
 
 void Inventory::close_window() {
-    gui.close_inv_window();
+    gui.CloseInvWindow();
     open = false;
     window = nullptr;
 }
@@ -160,7 +160,7 @@ void Inventory::update(float mx, float my) {
     if (!open) return;
 
     for (Slot& slot : slots)
-        slot.selected = point_in_rec(mx, my, slot.dest);
+        slot.selected = PointInRec(mx, my, slot.dest);
 
     if (crafting) {
         crafting->select_by_mouse(mx, my, craft_rect);
