@@ -638,17 +638,18 @@ int main() {
         }
 
         player.render(renderer, cam);
-        gui_engine.render_all();
-        inv.draw(renderer, debug_font.get());
 
         const Item* dragged = inv.cursor_item;
-        if (!inv.open && dragged && dragged->can_place) {
+        if (dragged && dragged->can_place) {
             int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
             int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
 
             bool can_place_here = CanPlaceAt(placed_objects, place_tile_x, place_tile_y, dragged->size);
             DrawPlacementPreviewTexture(renderer, cam, dragged, mouse_x, mouse_y, can_place_here);
         }
+
+        gui_engine.render_all();
+        inv.draw(renderer, debug_font.get());
 
         DrawMiningProgressBar(renderer, win_w, win_h, mining);
         SDL_RenderPresent(renderer);
