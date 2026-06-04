@@ -11,8 +11,8 @@ static constexpr SDL_Color GUI_TITLE_SHADOW_COLOR = {6, 7, 9, 210};
 static constexpr SDL_Color GUI_CLOSE_ICON_COLOR = {155, 160, 168, 255};
 static constexpr SDL_Color GUI_CLOSE_ICON_PRESSED_COLOR = {242, 244, 246, 255};
 
-GUIWindow::GUIWindow(Vec2 position, Vec2 size, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
-    : position(position), size(size), title(title),
+GUIWindow::GUIWindow(SDL_FRect size, const std::string& title, TTF_Font* title_font, SDL_Renderer* renderer)
+    : size(size), title(title),
       background_color(GUI_BG_COLOR),
       border_color(GUI_BORDER_COLOR),
       border_width(1.0f),
@@ -38,12 +38,12 @@ GUIWindow::~GUIWindow() {
     }
 }
 
-void GUIWindow::SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
-    background_color = SDL_Color{r, g, b, a};
+void GUIWindow::SetBackgroundColor(SDL_Color color) {
+    background_color = color;
 }
 
-void GUIWindow::SetBorderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a) {
-    border_color = SDL_Color{r, g, b, a};
+void GUIWindow::SetBorderColor(SDL_Color color) {
+    border_color = color;
 }
 
 void GUIWindow::SetBorderWidth(float width) {
@@ -84,7 +84,7 @@ bool GUIWindow::HandleEvent(const SDL_Event& e) {
 
             float mouse_x = (float)button.x;
             float mouse_y = (float)button.y;
-            SDL_FRect title_rect = {position.x + border_width, position.y + border_width, size.x - border_width * 2.0f, title_bar_height};
+            SDL_FRect title_rect = {size.x + border_width, size.y + border_width, size.w - border_width * 2.0f, title_bar_height};
             SDL_FRect close_rect = GetCloseButtonRect();
             if (mouse_x >= close_rect.x && mouse_x <= close_rect.x + close_rect.w &&
                 mouse_y >= close_rect.y && mouse_y <= close_rect.y + close_rect.h) {
@@ -95,7 +95,7 @@ bool GUIWindow::HandleEvent(const SDL_Event& e) {
             if (mouse_x >= title_rect.x && mouse_x <= title_rect.x + title_rect.w &&
                 mouse_y >= title_rect.y && mouse_y <= title_rect.y + title_rect.h) {
                 dragging = true;
-                drag_offset = {mouse_x - position.x, mouse_y - position.y};
+                drag_offset = {mouse_x - size.x, mouse_y - size.y};
                 return true;
             }
         }
@@ -148,8 +148,8 @@ bool GUIWindow::HandleEvent(const SDL_Event& e) {
         }
 
         if (dragging) {
-            position.x = motion.x - drag_offset.x;
-            position.y = motion.y - drag_offset.y;
+            size.x = motion.x - drag_offset.x;
+            size.y = motion.y - drag_offset.y;
             return true;
         }
     }
@@ -157,25 +157,24 @@ bool GUIWindow::HandleEvent(const SDL_Event& e) {
     return false;
 }
 
-void GUIWindow::DrawFilledRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color) {
+void GUIWindow::DrawFilledRect(SDL_Renderer* renderer, SDL_FRect rect, const SDL_Color& color) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
-    SDL_FRect rect = {position.x, position.y, size.x, size.y};
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void GUIWindow::DrawRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color, float thickness) {
+void GUIWindow::DrawRect(SDL_Renderer* renderer, SDL_FRect rect, const SDL_Color& color, float thickness) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     
-    SDL_FRect top = {position.x, position.y, size.x, thickness};
+    SDL_FRect top = {rect.x, rect.y, rect.w, thickness};
     SDL_RenderFillRect(renderer, &top);
     
-    SDL_FRect bottom = {position.x, position.y + size.y - thickness, size.x, thickness};
+    SDL_FRect bottom = {rect.x, rect.y + rect.h - thickness, rect.w, thickness};
     SDL_RenderFillRect(renderer, &bottom);
     
-    SDL_FRect left = {position.x, position.y, thickness, size.y};
+    SDL_FRect left = {rect.x, rect.y, thickness, rect.h};
     SDL_RenderFillRect(renderer, &left);
     
-    SDL_FRect right = {position.x + size.x - thickness, position.y, thickness, size.y};
+    SDL_FRect right = {rect.x + rect.w - thickness, rect.y, thickness, rect.h};
     SDL_RenderFillRect(renderer, &right);
 }
 
@@ -184,22 +183,22 @@ void GUIWindow::DrawTitle(SDL_Renderer* renderer) {
     if (!chrome_visible || title.empty()) return;
 
     float padding = 6.0f;
-    float available_width = size.x - border_width * 2.0f;
+    float available_width = size.w - border_width * 2.0f;
 
     SDL_SetRenderDrawColor(renderer, GUI_TITLE_BG_COLOR.r, GUI_TITLE_BG_COLOR.g, GUI_TITLE_BG_COLOR.b, GUI_TITLE_BG_COLOR.a);
-    SDL_FRect title_bg = {position.x + border_width, position.y + border_width, available_width, title_bar_height};
+    SDL_FRect title_bg = {size.x + border_width, size.y + border_width, available_width, title_bar_height};
     SDL_RenderFillRect(renderer, &title_bg);
 
     SDL_SetRenderDrawColor(renderer, 32, 35, 41, 255);
-    SDL_FRect title_line = {position.x + border_width, position.y + border_width + title_bar_height - 1.0f, available_width, 1.0f};
+    SDL_FRect title_line = {size.x + border_width, size.y + border_width + title_bar_height - 1.0f, available_width, 1.0f};
     SDL_RenderFillRect(renderer, &title_line);
 
     DrawCloseButton(renderer);
 
     if (!title_font) return;
 
-    float text_y = std::floor(position.y + border_width + (title_bar_height - (float)TTF_GetFontHeight(title_font)) * 0.5f);
-    float text_x = std::floor(position.x + border_width + padding);
+    float text_y = std::floor(size.y + border_width + (title_bar_height - (float)TTF_GetFontHeight(title_font)) * 0.5f);
+    float text_x = std::floor(size.x + border_width + padding);
 
     SDL_FRect title_dst = {0, 0, 0, 0};
     if (!TextRenderer::DrawTextShadow(renderer,
@@ -219,13 +218,13 @@ void GUIWindow::Render(SDL_Renderer* renderer) {
         return;
     }
 
-    float inner_x = position.x + border_width;
-    float inner_y = position.y + border_width;
-    float inner_w = size.x - border_width * 2.0f;
-    float inner_h = size.y - border_width * 2.0f;
+    float inner_x = size.x + border_width;
+    float inner_y = size.y + border_width;
+    float inner_w = size.w - border_width * 2.0f;
+    float inner_h = size.h - border_width * 2.0f;
 
     if (inner_w > 0.0f && inner_h > 0.0f) {
-        DrawFilledRect(renderer, {inner_x, inner_y}, {inner_w, inner_h}, background_color);
+        DrawFilledRect(renderer, {inner_x, inner_y, inner_w, inner_h}, background_color);
     }
 
     if (content_draw_callback) {
@@ -233,17 +232,17 @@ void GUIWindow::Render(SDL_Renderer* renderer) {
         content_draw_callback(renderer, content_rect);
     }
 
-    DrawRect(renderer, {position.x, position.y}, size, border_color, border_width);
+    DrawRect(renderer, size, border_color, border_width);
     if (chrome_visible) {
         DrawTitle(renderer);
     }
 }
 
 SDL_FRect GUIWindow::GetContentRect() const {
-    float content_x = position.x + border_width;
-    float content_y = position.y + border_width + (chrome_visible ? title_bar_height : 0.0f);
-    float content_w = size.x - border_width * 2.0f;
-    float content_h = size.y - border_width * 2.0f - (chrome_visible ? title_bar_height : 0.0f);
+    float content_x = size.x + border_width;
+    float content_y = size.y + border_width + (chrome_visible ? title_bar_height : 0.0f);
+    float content_w = size.w - border_width * 2.0f;
+    float content_h = size.h - border_width * 2.0f - (chrome_visible ? title_bar_height : 0.0f);
     return {content_x, content_y, content_w, content_h};
 }
 
@@ -257,8 +256,8 @@ void GUIWindow::SetCloseCallback(const std::function<void()>& callback) {
 
 SDL_FRect GUIWindow::GetCloseButtonRect() const {
     return {
-        position.x + size.x - border_width - close_button_size - 6.0f,
-        position.y + border_width + (title_bar_height - close_button_size) * 0.5f,
+        size.x + size.w - border_width - close_button_size - 6.0f,
+        size.y + border_width + (title_bar_height - close_button_size) * 0.5f,
         close_button_size,
         close_button_size
     };
@@ -333,20 +332,20 @@ GUIEngine::~GUIEngine() {
     TTF_Quit();
 }
 
-GUIWindow* GUIEngine::CreateWindow(Vec2 position, Vec2 size, const std::string& title) {
+GUIWindow* GUIEngine::CreateWindow(SDL_FRect size, const std::string& title) {
     if (main_window) {
         delete main_window;
     }
-    main_window = new GUIWindow(position, size, title, title_font, renderer);
+    main_window = new GUIWindow(size, title, title_font, renderer);
     return main_window;
 }
 
-GUIWindow* GUIEngine::CreateInfoWindow(Vec2 position, Vec2 size) {
+GUIWindow* GUIEngine::CreateInfoWindow(SDL_FRect size) {
     if (info_window) {
         delete info_window;
     }
 
-    info_window = new GUIWindow(position, size, "", title_font, renderer);
+    info_window = new GUIWindow(size, "", title_font, renderer);
     info_window->SetChromeVisible(false);
     return info_window;
 }
@@ -396,10 +395,10 @@ GUIWindow* GUIEngine::GetWindow() const {
     return main_window;
 }
 
-GUIWindow* GUIEngine::CreateInvWindow(Vec2 position, Vec2 size, const std::string& title) {
+GUIWindow* GUIEngine::CreateInvWindow(SDL_FRect size, const std::string& title) {
     if (inv_window) delete inv_window;
 
-    inv_window = new GUIWindow(position, size, title, title_font, renderer);
+    inv_window = new GUIWindow(size, title, title_font, renderer);
     return inv_window;
 }
 

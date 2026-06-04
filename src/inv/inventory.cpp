@@ -31,7 +31,7 @@ Inventory::~Inventory() {
 }
 
 void Inventory::open_window() {
-    window = gui.CreateInvWindow(Vec2{100, 150}, Vec2{INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H}, Localize("Inventory"));
+    window = gui.CreateInvWindow(SDL_FRect{100, 150, INV_WIN_W + CRAFT_PANEL_W, INV_WIN_H}, Localize("Inventory"));
 
     window->SetContentDrawCallback([this](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Rect clip = {

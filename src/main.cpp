@@ -154,11 +154,11 @@ int main() {
     TileType resource_panel_type = EMPTY;
 
     const std::string game_status_title = Localize("Game Status");
-    GUIWindow* main_window = gui_engine.CreateWindow(Vec2{10, 10}, Vec2{330, 220}, game_status_title);
-    GUIWindow* resource_panel = gui_engine.CreateInfoWindow(Vec2{0, 0}, Vec2{220, 110});
+    GUIWindow* main_window = gui_engine.CreateWindow(SDL_FRect{10, 10, 330, 220}, game_status_title);
+    GUIWindow* resource_panel = gui_engine.CreateInfoWindow(SDL_FRect{0, 0, 220, 110});
     resource_panel->SetVisible(false);
-    resource_panel->SetBackgroundColor(21, 24, 29, 245);
-    resource_panel->SetBorderColor(66, 74, 86, 255);
+    resource_panel->SetBackgroundColor(SDL_Color{21, 24, 29, 245});
+    resource_panel->SetBorderColor(SDL_Color{66, 74, 86, 255});
     resource_panel->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_SetRenderDrawColor(renderer, 16, 17, 21, 255);
         SDL_RenderFillRect(renderer, &content_rect);
@@ -372,8 +372,8 @@ int main() {
         resource_panel_name = hovered_tile_data.type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         resource_panel_yield = hovered_tile_data.yield;
         resource_panel_type = hovered_tile_data.type;
-        resource_panel->position.x = (float)win_w - resource_panel->size.x - 16.0f;
-        resource_panel->position.y = 16.0f;
+        resource_panel->size.x = (float)win_w - resource_panel->size.w - 16.0f;
+        resource_panel->size.y = 16.0f;
         resource_panel->SetVisible(resource_panel_visible);
 
         if (!(mouse_buttons & SDL_BUTTON_RMASK)) {

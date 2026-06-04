@@ -9,20 +9,19 @@
 
 class GUIWindow {
 public:
-    vec2 position;
-    vec2 size;
+    SDL_FRect size;
     SDL_Color background_color;
     SDL_Color border_color;
     float border_width;
     std::string title;
 
-    GUIWindow(Vec2 position, Vec2 size, 
+    GUIWindow(SDL_FRect size, 
               const std::string& title = "", TTF_Font* title_font = nullptr,
               SDL_Renderer* renderer = nullptr);
     ~GUIWindow();
     
-    void SetBackgroundColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
-    void SetBorderColor(Uint8 r, Uint8 g, Uint8 b, Uint8 a = 255);
+    void SetBackgroundColor(SDL_Color color);
+    void SetBorderColor(SDL_Color color);
     void SetBorderWidth(float width);
     void SetTitle(const std::string& new_title);
     void SetTitleFont(TTF_Font* font);
@@ -53,8 +52,8 @@ private:
 
     SDL_FRect GetCloseButtonRect() const;
     void DrawCloseButton(SDL_Renderer* renderer);
-    void DrawFilledRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color);
-    void DrawRect(SDL_Renderer* renderer, Vec2 position, Vec2 size, const SDL_Color& color, float thickness);
+    void DrawFilledRect(SDL_Renderer* renderer, SDL_FRect rect, const SDL_Color& color);
+    void DrawRect(SDL_Renderer* renderer, SDL_FRect rect, const SDL_Color& color, float thickness);
     void DrawTitle(SDL_Renderer* renderer);
 };
 
@@ -63,15 +62,15 @@ public:
     GUIEngine(SDL_Renderer* renderer);
     ~GUIEngine();
     
-    GUIWindow* CreateWindow(Vec2 position, Vec2 size, const std::string& title = "");
-    GUIWindow* CreateInfoWindow(Vec2 position, Vec2 size);
+    GUIWindow* CreateWindow(SDL_FRect size, const std::string& title = "");
+    GUIWindow* CreateInfoWindow(SDL_FRect size);
     void RenderAll();
     void ClearWindows();
     bool HandleEvent(const SDL_Event& e);
     GUIWindow* GetWindow() const;
 
     // inventory
-    GUIWindow* CreateInvWindow(Vec2 position, Vec2 size, const std::string& title);
+    GUIWindow* CreateInvWindow(SDL_FRect size, const std::string& title);
     void CloseInvWindow();
     void CloseInfoWindow();
 
