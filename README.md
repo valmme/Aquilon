@@ -6,6 +6,7 @@ Aquilon is a small SDL3-based 2D sandbox game prototype with procedural terrain,
 
 - Procedural world generation with chunk loading around the player
 - Tile rendering with SDL3_image textures
+- Powerful audio system using SDL3_mixer
 - Basic player movement and camera follow
 - GUI window with close / drag behavior
 - Colored console logging and file logging to `aquilon.log`

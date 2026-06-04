@@ -28,29 +28,35 @@ set(SDLIMAGE_QOI OFF CACHE BOOL "Disable QOI support" FORCE)
 FetchContent_Declare(
     SDL
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG release-3.2.0
+    GIT_TAG release-3.4.10
 )
 
 FetchContent_Declare(
     SDL_image
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_image.git
-    GIT_TAG release-3.2.0
+    GIT_TAG release-3.4.4
 )
 
 FetchContent_Declare(
     SDL_ttf
     GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-    GIT_TAG release-3.2.0
+    GIT_TAG release-3.2.2
 )
 
-FetchContent_MakeAvailable(SDL SDL_image SDL_ttf)
+FetchContent_Declare(
+    SDL_mixer
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+    GIT_TAG release-3.2.4
+)
+
+FetchContent_MakeAvailable(SDL SDL_image SDL_ttf SDL_mixer)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
 add_executable(Aquilon ${SOURCES})
 
 target_include_directories(Aquilon PRIVATE include)
-target_link_libraries(Aquilon PRIVATE SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf)
+target_link_libraries(Aquilon PRIVATE SDL3::SDL3 SDL3_image::SDL3_image SDL3_ttf::SDL3_ttf SDL3_mixer::SDL3_mixer)
 
 if(WIN32)
     target_link_libraries(Aquilon PRIVATE Ws2_32)
@@ -68,5 +74,8 @@ add_custom_command(TARGET Aquilon POST_BUILD
     $<TARGET_FILE_DIR:Aquilon>
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
     $<TARGET_FILE:SDL3_ttf::SDL3_ttf>
+    $<TARGET_FILE_DIR:Aquilon>
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    $<TARGET_FILE:SDL3_mixer::SDL3_mixer>
     $<TARGET_FILE_DIR:Aquilon>
 )

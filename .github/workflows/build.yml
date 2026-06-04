@@ -46,7 +46,17 @@ jobs:
           New-Item -ItemType Directory -Force -Path dist
           if (Test-Path build\Release\Aquilon.exe) { Copy-Item -Path build\Release\Aquilon.exe -Destination dist\ -Force }
           elseif (Test-Path build\Aquilon.exe) { Copy-Item -Path build\Aquilon.exe -Destination dist\ -Force }
+          Get-ChildItem -Path build\Release -Filter *.dll -File -ErrorAction SilentlyContinue | Copy-Item -Destination dist\ -Force
           if (Test-Path resources) { Copy-Item -Recurse -Force -Path resources -Destination dist\resources }
+
+      - name: Prepare dist (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          if [ -f build/Release/Aquilon ]; then cp build/Release/Aquilon dist/; elif [ -f build/Aquilon ]; then cp build/Aquilon dist/; fi
+          cp -r resources dist/ || true
+          cp build/Release/*.so dist/ 2>/dev/null || true
+          cp build/Release/*.dylib dist/ 2>/dev/null || true
 
       - name: Upload dist artifact
         uses: actions/upload-artifact@v4

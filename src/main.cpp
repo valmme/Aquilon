@@ -16,6 +16,7 @@
 #include "logger.h"
 #include "inv/crafting.h"
 #include "inv/inventory.h"
+#include "audio.h"
 
 const int TILE_SIZE = 32;
 
@@ -70,12 +71,18 @@ int main() {
     }
     LoadLocalization(localization_path);
 
+    AudioEngine audio;
+    if (!audio.Init()) {
+        Logger::Log("AUDIO", Logger::Level::Warn, "Audio engine failed to initialize.");
+    }
+
     Logger::Log("APPLICATION", Logger::Level::Info, "Starting Aquilon...");
     Logger::Log("APPLICATION", Logger::Level::Info, "Log level: %s", log_level_name(config.log_level));
 
     SDL_Window* window = SDL_CreateWindow("Aquilon", config.window_width, config.window_height, 0);
     if (!window) {
         Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to create window: %s", SDL_GetError());
+        audio.Shutdown();
         SDL_Quit();
         return 1;
     }
@@ -92,6 +99,7 @@ int main() {
     if (!renderer) {
         Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to create renderer: %s", SDL_GetError());
         log_available_renderers();
+        audio.Shutdown();
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
@@ -464,6 +472,7 @@ int main() {
 
     TextRenderer::ClearCache();
 
+    audio.Shutdown();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
