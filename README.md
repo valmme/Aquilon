@@ -17,7 +17,7 @@ Aquilon is a small SDL3-based 2D sandbox game prototype with procedural terrain,
 
 - CMake 3.16 or newer
 - A C++17 compiler
-- SDL3, SDL3_image, and SDL3_ttf are fetched automatically by CMake
+- SDL3, SDL3_image, SDL3_ttf and SDL3_mixer are fetched automatically by CMake
 
 ## Linux Setup
 
