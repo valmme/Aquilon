@@ -379,7 +379,7 @@ int main() {
         if (!(mouse_buttons & SDL_BUTTON_RMASK)) {
             player.stop_mining();
             right_hold_blocked = false;
-        } else if (!right_hold_blocked) {
+        } else if (!right_hold_blocked && inv.open == false) {
             if (!player.is_mining() && (hovered_tile_data.type == STONE || hovered_tile_data.type == IRON_ORE)) {
                 player.start_mining(hovered_tile.x, hovered_tile.y, hovered_tile_data.type);
             }
