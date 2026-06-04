@@ -1,10 +1,10 @@
 #include "player.h"
 
-#include "player.h"
 #include "inv/inventory.h"
 #include "inv/item.h"
 #include "textures.h"
 #include "gen/world.h"
+#include <cmath>
 
 Player::Player(const InputConfig& input) : input(input) {
     player = { 0.0f, 0.0f, 32, 32 };
@@ -33,6 +33,78 @@ void Player::handle_input(const SDL_Event& e) {
     }
 }
 
+bool Player::can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size) {
+    for (const PlacedObject& obj : placed_objects) {
+        int ax1 = obj.x;
+        int ay1 = obj.y;
+        int ax2 = obj.x + (int)obj.size.x - 1;
+        int ay2 = obj.y + (int)obj.size.y - 1;
+
+        int bx1 = x;
+        int by1 = y;
+        int bx2 = x + (int)size.x - 1;
+        int by2 = y + (int)size.y - 1;
+
+        bool overlap = !(bx2 < ax1 || bx1 > ax2 || by2 < ay1 || by1 > ay2);
+        if (overlap) return false;
+    }
+    return true;
+}
+
+void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) {
+    if (!renderer || !item || !item->can_place || !item->texture) return;
+
+    int tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / 32.0f);
+    int tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / 32.0f);
+
+    float world_x = tile_x * 32.0f;
+    float world_y = tile_y * 32.0f;
+    float world_w = item->size.x * 32.0f;
+    float world_h = item->size.y * 32.0f;
+
+    SDL_FRect dst = cam.world_to_screen_rect(world_x, world_y, world_w, world_h);
+
+    SDL_SetTextureBlendMode(item->texture, SDL_BLENDMODE_BLEND);
+    SDL_SetTextureAlphaMod(item->texture, can_place_here ? 120 : 80);
+    SDL_SetTextureColorMod(item->texture, can_place_here ? 90 : 255, can_place_here ? 255 : 80, can_place_here ? 120 : 80);
+    SDL_RenderTexture(renderer, item->texture, nullptr, &dst);
+
+    SDL_SetTextureAlphaMod(item->texture, 255);
+    SDL_SetTextureColorMod(item->texture, 255, 255, 255);
+}
+
+void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, bool allow_world_interaction) {
+    if (!allow_world_interaction || inventory.open) {
+        return;
+    }
+
+    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) {
+        return;
+    }
+
+    Item* dragged = inventory.cursor_item;
+    if (!dragged || !dragged->can_place) {
+        return;
+    }
+
+    const int place_tile_x = (int)std::floor((cam.x + (float)e.button.x / cam.zoom) / 32.0f);
+    const int place_tile_y = (int)std::floor((cam.y + (float)e.button.y / cam.zoom) / 32.0f);
+
+    if (!can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size)) {
+        return;
+    }
+
+    PlacedObject obj;
+    obj.type = dragged->type;
+    obj.texture = dragged->texture;
+    obj.x = place_tile_x;
+    obj.y = place_tile_y;
+    obj.size = dragged->size;
+
+    placed_objects.push_back(obj);
+    inventory.consume_cursor_item_one();
+}
+
 void Player::update(float delta_time) {
     if (up)    player.y -= speed * delta_time;
     if (down)  player.y += speed * delta_time;
@@ -40,6 +112,46 @@ void Player::update(float delta_time) {
     if (right) player.x += speed * delta_time;
 
     update_animation(delta_time);
+}
+
+void Player::render_placed_objects(SDL_Renderer* renderer, const Camera& cam,
+                                   int visible_min_tile_x, int visible_min_tile_y,
+                                   int visible_max_tile_x, int visible_max_tile_y) const {
+    for (const PlacedObject& obj : placed_objects) {
+        const int obj_x1 = obj.x;
+        const int obj_y1 = obj.y;
+        const int obj_x2 = obj.x + (int)obj.size.x - 1;
+        const int obj_y2 = obj.y + (int)obj.size.y - 1;
+        if (obj_x2 < visible_min_tile_x || obj_x1 > visible_max_tile_x ||
+            obj_y2 < visible_min_tile_y || obj_y1 > visible_max_tile_y) {
+            continue;
+        }
+
+        if (!obj.texture) continue;
+
+        SDL_FRect dst = cam.world_to_screen_rect(
+            obj.x * 32.0f,
+            obj.y * 32.0f,
+            obj.size.x * 32.0f,
+            obj.size.y * 32.0f
+        );
+
+        SDL_RenderTexture(renderer, obj.texture, nullptr, &dst);
+    }
+}
+
+void Player::draw_item_placement_preview(SDL_Renderer* renderer, const Camera& cam,
+                                         const Inventory& inventory, float mouse_x, float mouse_y) const {
+    const Item* dragged = inventory.cursor_item;
+    if (!dragged || !dragged->can_place) {
+        return;
+    }
+
+    int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / 32.0f);
+    int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / 32.0f);
+
+    bool can_place_here = can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size);
+    draw_placement_preview_texture(renderer, cam, dragged, mouse_x, mouse_y, can_place_here);
 }
 
 void Player::update_animation(float delta_time) {

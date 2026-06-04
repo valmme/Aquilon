@@ -45,65 +45,6 @@ static void log_available_renderers() {
     }
 }
 
-struct PlacedObject {
-    ItemType type = ItemType::NONE;
-    SDL_Texture* texture = nullptr;
-    int x = 0;
-    int y = 0;
-    vec2 size = {1, 1};
-};
-
-std::vector<PlacedObject> placed_objects;
-
-static bool can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size) {
-    for (const PlacedObject& obj : placed_objects) {
-        int ax1 = obj.x;
-        int ay1 = obj.y;
-        int ax2 = obj.x + (int)obj.size.x - 1;
-        int ay2 = obj.y + (int)obj.size.y - 1;
-
-        int bx1 = x;
-        int by1 = y;
-        int bx2 = x + (int)size.x - 1;
-        int by2 = y + (int)size.y - 1;
-
-        bool overlap = !(bx2 < ax1 || bx1 > ax2 || by2 < ay1 || by1 > ay2);
-        if (overlap) return false;
-    }
-    return true;
-}
-
-static SDL_Point screen_to_tile(const Camera& cam, float screen_x, float screen_y) {
-    const float world_x = cam.x + screen_x / cam.zoom;
-    const float world_y = cam.y + screen_y / cam.zoom;
-    return {
-        (int)std::floor(world_x / (float)TILE_SIZE),
-        (int)std::floor(world_y / (float)TILE_SIZE)
-    };
-}
-
-static void draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) {
-    if (!renderer || !item || !item->can_place || !item->texture) return;
-
-    int tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
-    int tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
-
-    float world_x = tile_x * TILE_SIZE;
-    float world_y = tile_y * TILE_SIZE;
-    float world_w = item->size.x * TILE_SIZE;
-    float world_h = item->size.y * TILE_SIZE;
-
-    SDL_FRect dst = cam.world_to_screen_rect(world_x, world_y, world_w, world_h);
-
-    SDL_SetTextureBlendMode(item->texture, SDL_BLENDMODE_BLEND);
-    SDL_SetTextureAlphaMod(item->texture, can_place_here ? 120 : 80);
-    SDL_SetTextureColorMod(item->texture, can_place_here ? 90 : 255, can_place_here ? 255 : 80, can_place_here ? 120 : 80);
-    SDL_RenderTexture(renderer, item->texture, nullptr, &dst);
-
-    SDL_SetTextureAlphaMod(item->texture, 255);
-    SDL_SetTextureColorMod(item->texture, 255, 255, 255);
-}
-
 int main() {
     Logger::SetLogFile("aquilon.log");
     Logger::SetConsoleOutput(true);
@@ -383,34 +324,12 @@ int main() {
                 right_hold_blocked = false;
             }
 
-            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT && !inv.open) {
-                float mouse_x = 0.0f, mouse_y = 0.0f;
-                SDL_GetMouseState(&mouse_x, &mouse_y);
-
-                Item* dragged = inv.cursor_item;
-                if (dragged && dragged->can_place) {
-                    int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
-                    int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
-
-                    if (can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size)) {
-                        PlacedObject obj;
-                        obj.type = dragged->type;
-                        obj.texture = dragged->texture;
-                        obj.x = place_tile_x;
-                        obj.y = place_tile_y;
-                        obj.size = dragged->size;
-
-                        placed_objects.push_back(obj);
-                        inv.consume_cursor_item_one();
-                    }
-                }
-            }
-
             if (!gui_consumed) {
                 player.handle_input(e);
             }
 
             inv.handle_event(e);
+            player.handle_item_placement(e, cam, inv, !gui_consumed);
         }
 
         player.update(delta_time);
@@ -443,7 +362,10 @@ int main() {
         const int visible_max_tile_x = (int)std::floor(view_right_world / (float)TILE_SIZE) + 1;
         const int visible_max_tile_y = (int)std::floor(view_bottom_world / (float)TILE_SIZE) + 1;
 
-        SDL_Point hovered_tile = screen_to_tile(cam, mouse_x, mouse_y);
+        SDL_Point hovered_tile = {
+            (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE),
+            (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE)
+        };
         Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
 
         resource_panel_visible = hovered_tile_data.type == STONE || hovered_tile_data.type == IRON_ORE;
@@ -520,38 +442,11 @@ int main() {
             }
         }
 
-        for (const PlacedObject& obj : placed_objects) {
-            const int obj_x1 = obj.x;
-            const int obj_y1 = obj.y;
-            const int obj_x2 = obj.x + (int)obj.size.x - 1;
-            const int obj_y2 = obj.y + (int)obj.size.y - 1;
-            if (obj_x2 < visible_min_tile_x || obj_x1 > visible_max_tile_x ||
-                obj_y2 < visible_min_tile_y || obj_y1 > visible_max_tile_y) {
-                continue;
-            }
-
-            if (!obj.texture) continue;
-
-            SDL_FRect dst = cam.world_to_screen_rect(
-                obj.x * TILE_SIZE,
-                obj.y * TILE_SIZE,
-                obj.size.x * TILE_SIZE,
-                obj.size.y * TILE_SIZE
-            );
-
-            SDL_RenderTexture(renderer, obj.texture, nullptr, &dst);
-        }
+        player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
 
         player.render(renderer, cam);
 
-        const Item* dragged = inv.cursor_item;
-        if (dragged && dragged->can_place) {
-            int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / (float)TILE_SIZE);
-            int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / (float)TILE_SIZE);
-
-            bool can_place_here = can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size);
-            draw_placement_preview_texture(renderer, cam, dragged, mouse_x, mouse_y, can_place_here);
-        }
+        player.draw_item_placement_preview(renderer, cam, inv, mouse_x, mouse_y);
 
         gui_engine.RenderAll();
         inv.draw(renderer, debug_font.get());
