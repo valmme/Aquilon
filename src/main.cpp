@@ -100,7 +100,7 @@ int main() {
     Logger::Log("SYSTEM", Logger::Level::Info, "Created SDL renderer backend: %s",
                 SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
 
-    if (!SDL_SetRenderVSync(renderer, config.vsync_enabled ? 1 : 0)) {
+    if (SDL_SetRenderVSync(renderer, config.vsync_enabled ? 1 : 0) != 0) {
         Logger::Log("SYSTEM", Logger::Level::Warn,
                     "SDL could not apply VSync=%s: %s",
                     config.vsync_enabled ? "on" : "off", SDL_GetError());
