@@ -15,6 +15,7 @@ struct Textures {
     SDL_Texture* iron_plate;
 
     SDL_Texture* furnace;
+    SDL_Texture* drill;
 
     // ui
     SDL_Texture* slot;

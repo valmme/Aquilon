@@ -55,6 +55,16 @@ void CraftingSystem::initialize_recipes(Textures* tex) {
             { ItemType::STONE, 5 }
         }
     });
+
+    add_recipe(Recipe{
+        "Drill",
+        1,
+        tex->drill,
+        ItemType::DRILL,
+        {
+            { ItemType::IRON_PLATE, 3 }, { ItemType::FURNACE, 1 }
+        }
+    });
 }
 
 void CraftingSystem::add_recipe(const Recipe& recipe) {
@@ -163,6 +173,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         if (r.result_texture) {
             float pad = 6.0f;
             SDL_FRect icon = { slot.x + pad, slot.y + pad, slot.w - pad * 2, slot.h - pad * 2 };
+            SDL_SetTextureScaleMode(r.result_texture, SDL_SCALEMODE_NEAREST);
 
             if (!can) SDL_SetTextureAlphaMod(r.result_texture, 80);
             SDL_RenderTexture(renderer, r.result_texture, nullptr, &icon);

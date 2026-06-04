@@ -12,6 +12,7 @@ enum class ItemType {
     IRON_PLATE,
     COPPER_ORE,
     FURNACE,
+    DRILL,
 
     UNDEFINED,
     NONE
@@ -40,17 +41,14 @@ struct Item {
 
     void draw(SDL_Renderer* renderer, float slot_size = 35.0f) const {
         if (texture) {
-            SDL_FRect src = {0, 0, (float)texture->w, (float)texture->h};
+            SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
             SDL_FRect dst = {
                 dest.x + ITEM_PADDING,
                 dest.y + ITEM_PADDING,
                 slot_size - ITEM_PADDING * 2.0f,
                 slot_size - ITEM_PADDING * 2.0f
             };
-            SDL_RenderTexture(renderer, texture, &src, &dst);
-        } else {
-            SDL_SetRenderDrawColor(renderer, 200, 150, 50, 255);
-            SDL_RenderFillRect(renderer, &dest);
+            SDL_RenderTexture(renderer, texture, nullptr, &dst);
         }
     }
 
@@ -58,6 +56,7 @@ struct Item {
     static Item IRON_ORE;
     static Item IRON_PLATE;
     static Item FURNACE;
+    static Item DRILL;
 };
 
 void initialize_items(Textures tex);

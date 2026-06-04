@@ -9,21 +9,17 @@ static SDL_Texture* LoadTexture(SDL_Renderer* renderer, const char* label, const
         Logger::Log("APPLICATION", Logger::Level::Error,
                     "Failed to load texture '%s' from '%s': %s",
                     label, file, SDL_GetError());
-        return nullptr;
+
+        SDL_Texture* fallback = IMG_LoadTexture(renderer, "resources/textures/none.png");
+        if (!fallback) {
+            Logger::Log("APPLICATION", Logger::Level::Fatal,
+                        "Fallback texture could not be created for '%s'.", label);
+        }
+        return fallback;
     }
 
     SDL_SetTextureScaleMode(tex, SDL_SCALEMODE_NEAREST);
-    if (tex) {
-        return tex;
-    }
-
-    SDL_Texture* fallback = LoadTexture(renderer, "none", "resources/textures/none.png");
-    if (!fallback) {
-        Logger::Log("APPLICATION", Logger::Level::Fatal,
-                    "Fallback texture could not be created for '%s'.",
-                    label);
-    }
-    return fallback;
+    return tex;
 }
 
 Textures LoadTextures(SDL_Renderer* renderer) {
@@ -44,6 +40,7 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     t.iron_ore   = LoadTexture(renderer, "iron_ore", "resources/textures/iron_ore.png");
     t.iron_plate = LoadTexture(renderer, "iron_plate", "resources/textures/iron_plate.png");
     t.furnace    = LoadTexture(renderer, "furnace", "resources/textures/furnace.png");
+    t.drill      = LoadTexture(renderer, "drill", "resources/textures/drill.png");
 
     // ui
     t.slot          = LoadTexture(renderer, "slot", "resources/textures/slot.png");
