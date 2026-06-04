@@ -27,7 +27,7 @@ Debian/Ubuntu based systems:
 sudo apt update
 sudo apt install -y \
   cmake g++ ninja-build \
-  libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxss-dev libxi-dev \
+  libx11-dev libxext-dev libxrandr-dev libxinerama-dev libxcursor-dev libxss-dev libxtst-dev libxi-dev \
   libwayland-dev wayland-protocols libxkbcommon-dev
 ```
 
