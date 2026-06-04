@@ -196,10 +196,8 @@ bool Player::is_mineable(TileType type) {
 
 Item* Player::make_drop_for_tile(const Tile& tile, const Textures& textures) {
     switch (tile.type) {
-        case STONE:
-            return new Item{ItemType::STONE, "Stone", 1, textures.stone};
-        case IRON_ORE:
-            return new Item{ItemType::IRON_ORE, "Iron Ore", 1, textures.iron_ore};
+        case STONE: return Item::IRON_ORE.copy();
+        case IRON_ORE: return Item::IRON_ORE.copy();
         default:
             return nullptr;
     }

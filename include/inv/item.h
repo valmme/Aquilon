@@ -2,14 +2,17 @@
 #define AQUILON_ITEM_H
 
 #include "vmath.h"
+#include "textures.h"
 #include <string>
 #include <SDL3/SDL.h>
 
 enum class ItemType {
     STONE,
     IRON_ORE,
+    IRON_PLATE,
     COPPER_ORE,
     FURNACE,
+
     UNDEFINED,
     NONE
 };
@@ -50,6 +53,14 @@ struct Item {
             SDL_RenderFillRect(renderer, &dest);
         }
     }
+
+    static Item STONE;
+    static Item IRON_ORE;
+    static Item IRON_PLATE;
+    static Item FURNACE;
 };
+
+void initialize_items(Textures tex);
+Item* item_stack(Item item, int a);
 
 #endif // AQUILON_ITEM_H

@@ -38,11 +38,12 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     }
 
     // tiles
-    t.ice      = LoadTexture(renderer, "ice", "resources/textures/ice.png");
-    t.snow     = LoadTexture(renderer, "snow", "resources/textures/snow.png");
-    t.stone    = LoadTexture(renderer, "stone", "resources/textures/stone.png");
-    t.iron_ore = LoadTexture(renderer, "iron_ore", "resources/textures/iron_ore.png");
-    t.furnace  = LoadTexture(renderer, "furnace", "resources/textures/furnace.png");
+    t.ice        = LoadTexture(renderer, "ice", "resources/textures/ice.png");
+    t.snow       = LoadTexture(renderer, "snow", "resources/textures/snow.png");
+    t.stone      = LoadTexture(renderer, "stone", "resources/textures/stone.png");
+    t.iron_ore   = LoadTexture(renderer, "iron_ore", "resources/textures/iron_ore.png");
+    t.iron_plate = LoadTexture(renderer, "iron_plate", "resources/textures/iron_plate.png");
+    t.furnace    = LoadTexture(renderer, "furnace", "resources/textures/furnace.png");
 
     // ui
     t.slot          = LoadTexture(renderer, "slot", "resources/textures/slot.png");
@@ -58,6 +59,7 @@ void FreeTextures(Textures& t) {
     if (t.snow) SDL_DestroyTexture(t.snow);
     if (t.stone) SDL_DestroyTexture(t.stone);
     if (t.iron_ore) SDL_DestroyTexture(t.iron_ore);
+    if (t.iron_plate) SDL_DestroyTexture(t.iron_plate);
     if (t.furnace) SDL_DestroyTexture(t.furnace);
     if (t.slot) SDL_DestroyTexture(t.slot);
     if (t.none) SDL_DestroyTexture(t.none);

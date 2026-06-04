@@ -12,6 +12,7 @@ struct Textures {
     SDL_Texture* snow;
     SDL_Texture* stone;
     SDL_Texture* iron_ore;
+    SDL_Texture* iron_plate;
 
     SDL_Texture* furnace;
 

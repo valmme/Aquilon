@@ -16,6 +16,7 @@
 #include "logger.h"
 #include "inv/crafting.h"
 #include "inv/inventory.h"
+#include "inv/item.h"
 #include "audio.h"
 
 const int TILE_SIZE = 32;
@@ -135,8 +136,11 @@ int main() {
     Camera cam;
     Inventory inv(gui_engine, tex, debug_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
+    initialize_items(tex);
     inv.set_crafting_system(crafting);
-    inv.pick(new Item{ItemType::FURNACE, "Furnace", 67, tex.furnace, true, {2, 2}});
+
+    inv.pick(item_stack(Item::FURNACE, 67));
+    inv.pick(item_stack(Item::IRON_PLATE, 31));
 
     crafting->initialize_recipes(&tex);
 
