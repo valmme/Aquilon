@@ -103,6 +103,7 @@ void Slot::update(Item*& cursor_item, const SDL_Event& e) {
         }
     }
 }
+
 void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
     if (tex.slot) {
         SDL_RenderTexture(renderer, tex.slot, nullptr, &dest);
@@ -148,9 +149,11 @@ void Slot::draw(SDL_Renderer* renderer, Textures tex, TTF_Font* font) const {
     }
 
     if (pressed) {
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 120);
         SDL_RenderFillRect(renderer, &dest);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
         SDL_RenderRect(renderer, &dest);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
     }
 }
