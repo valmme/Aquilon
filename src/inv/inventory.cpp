@@ -191,6 +191,14 @@ void Inventory::draw(SDL_Renderer* renderer, TTF_Font* font) const {
 }
 
 void Inventory::pick(Item* item) {
+    if (!item) return;
+
+    if (cursor_item && cursor_item->type == item->type) {
+        cursor_item->amount += item->amount;
+        delete item;
+        return;
+    }
+
     for (Slot& slot : slots) {
         if (slot.item && slot.item->type == item->type) {
             slot.item->amount += item->amount;

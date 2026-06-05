@@ -180,6 +180,13 @@ int main() {
     const std::string game_status_title = Localize("Game Status");
     GUIWindow* main_window = gui_engine.CreateWindow(SDL_FRect{10, 10, 330, 220}, game_status_title);
     GUIWindow* resource_panel = gui_engine.CreateInfoWindow(SDL_FRect{0, 0, 220, 110});
+    GUIWindow* crafting_queue_window = gui_engine.CreateQueueWindow(SDL_FRect{10.0f, (float)win_h - 120.0f, 260.0f, 100.0f});
+    crafting_queue_window->SetVisible(false);
+    crafting_queue_window->SetBackgroundColor(SDL_Color{14, 15, 18, 230});
+    crafting_queue_window->SetBorderColor(SDL_Color{42, 46, 54, 255});
+    crafting_queue_window->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+        if (crafting) crafting->draw_queue(renderer, debug_font.get(), content_rect);
+    });
     resource_panel->SetVisible(false);
     resource_panel->SetBackgroundColor(SDL_Color{21, 24, 29, 245});
     resource_panel->SetBorderColor(SDL_Color{66, 74, 86, 255});
@@ -376,6 +383,7 @@ int main() {
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         furnace_panel->update(delta_time);
+        crafting->update(delta_time, inv);
         inv.update(mouse_x, mouse_y);
 
         const float view_left_world = cam.x;
@@ -474,6 +482,12 @@ int main() {
         player.render(renderer, cam);
 
         player.draw_item_placement_preview(renderer, cam, inv, mouse_x, mouse_y);
+
+        if (crafting_queue_window) {
+            crafting_queue_window->size.x = 10.0f;
+            crafting_queue_window->size.y = (float)win_h - crafting_queue_window->size.h - 10.0f;
+            crafting_queue_window->SetVisible(crafting && crafting->has_queue());
+        }
 
         gui_engine.RenderAll();
         inv.draw(renderer, debug_font.get());

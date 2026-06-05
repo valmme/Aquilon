@@ -299,7 +299,7 @@ static TTF_Font* LoadDefaultFont() {
 }
 
 GUIEngine::GUIEngine(SDL_Renderer* renderer)
-    : renderer(renderer), main_window(nullptr), inv_window(nullptr), info_window(nullptr), title_font(nullptr) {
+    : renderer(renderer), main_window(nullptr), inv_window(nullptr), info_window(nullptr), queue_window(nullptr), title_font(nullptr) {
     if (!TTF_Init()) {
         Logger::Log("UI", Logger::Level::Error,
                     "Failed to initialize SDL_ttf: %s", SDL_GetError());
@@ -328,6 +328,11 @@ GUIEngine::~GUIEngine() {
         info_window = nullptr;
     }
 
+    if (queue_window) {
+        delete queue_window;
+        queue_window = nullptr;
+    }
+
     if (title_font) TTF_CloseFont(title_font);
     TTF_Quit();
 }
@@ -350,6 +355,23 @@ GUIWindow* GUIEngine::CreateInfoWindow(SDL_FRect size) {
     return info_window;
 }
 
+GUIWindow* GUIEngine::CreateQueueWindow(SDL_FRect size) {
+    if (queue_window) {
+        delete queue_window;
+    }
+
+    queue_window = new GUIWindow(size, "", title_font, renderer);
+    queue_window->SetChromeVisible(false);
+    return queue_window;
+}
+
+void GUIEngine::CloseQueueWindow() {
+    if (queue_window) {
+        delete queue_window;
+        queue_window = nullptr;
+    }
+}
+
 bool GUIEngine::HandleEvent(const SDL_Event& e) {
     bool consumed = false;
 
@@ -358,6 +380,17 @@ bool GUIEngine::HandleEvent(const SDL_Event& e) {
         if (inv_window->IsClosed()) {
             delete inv_window;
             inv_window = nullptr;
+            return true;
+        }
+
+        if (consumed) return true;
+    }
+
+    if (queue_window) {
+        consumed = queue_window->HandleEvent(e);
+        if (queue_window->IsClosed()) {
+            delete queue_window;
+            queue_window = nullptr;
             return true;
         }
 
@@ -394,6 +427,11 @@ bool GUIEngine::IsMouseOverAnyWindow(const vec2& mouse_pos) const {
         return true;
     }
 
+    if (queue_window && queue_window->GetContentRect().x <= mouse_pos.x && mouse_pos.x <= queue_window->GetContentRect().x + queue_window->GetContentRect().w &&
+        queue_window->GetContentRect().y <= mouse_pos.y && mouse_pos.y <= queue_window->GetContentRect().y + queue_window->GetContentRect().h) {
+        return true;
+    }
+
     return false;
 }
 
@@ -401,6 +439,7 @@ void GUIEngine::RenderAll() {
     if (main_window) main_window->Render(renderer);
     if (inv_window) inv_window->Render(renderer);
     if (info_window) info_window->Render(renderer);
+    if (queue_window) queue_window->Render(renderer);
 }
 
 void GUIEngine::ClearWindows() {

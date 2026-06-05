@@ -25,6 +25,8 @@ struct Recipe {
     std::vector<RecipeIngredient> ingredients;
 };
 
+#include "inv/crafting_queue.h"
+
 class CraftingSystem : public Panel {
 public:
     CraftingSystem(Textures& tex, TTF_Font* font);
@@ -34,10 +36,12 @@ public:
 
     bool can_craft(const Inventory& inv, const Recipe& recipe) const;
     bool craft_selected(Inventory& inv);
+    bool has_queue() const;
 
-    void update(float mx, float my);
+    void update(float delta_time, Inventory& inv);
     void handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect);
     void draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rect, const Inventory& inv) const;
+    void draw_queue(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect& screen_rect) const;
     void select_by_mouse(float mx, float my, const SDL_FRect& panel_rect);
 
 private:
@@ -47,6 +51,7 @@ private:
     std::vector<Recipe> recipes;
     int selected = -1;
     int hovered = -1;
+    CraftingQueue queue;
 
     static const char* item_type_name(ItemType type);
 };

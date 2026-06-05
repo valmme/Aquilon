@@ -64,6 +64,7 @@ public:
     
     GUIWindow* CreateWindow(SDL_FRect size, const std::string& title = "");
     GUIWindow* CreateInfoWindow(SDL_FRect size);
+    GUIWindow* CreateQueueWindow(SDL_FRect size);
     void RenderAll();
     void ClearWindows();
     bool HandleEvent(const SDL_Event& e);
@@ -75,12 +76,14 @@ public:
     GUIWindow* CreateInvWindow(SDL_FRect size, const std::string& title);
     void CloseInvWindow();
     void CloseInfoWindow();
+    void CloseQueueWindow();
 
 private:
     SDL_Renderer* renderer;
     GUIWindow* main_window;
     GUIWindow* inv_window;
     GUIWindow* info_window;
+    GUIWindow* queue_window;
     TTF_Font* title_font;
 };
 

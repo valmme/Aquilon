@@ -1,4 +1,5 @@
 #include "inv/crafting.h"
+#include "inv/crafting_queue.h"
 #include "inv/inventory.h"
 #include "textrenderer.h"
 #include <cstdio>
@@ -83,14 +84,15 @@ bool CraftingSystem::craft_selected(Inventory& inv) {
     if (selected < 0 || selected >= (int)recipes.size()) return false;
 
     const Recipe& r = recipes[selected];
-    if (!can_craft(inv, r)) return false;
+    return queue.enqueue(r, inv, recipes);
+}
 
-    for (const auto& ing : r.ingredients) {
-        inv.remove(ing.type, ing.amount);
-    }
+void CraftingSystem::update(float delta_time, Inventory& inv) {
+    queue.update(delta_time, inv);
+}
 
-    inv.pick(new Item(r.result_type, r.name, r.result_amount, r.result_texture, false, {1, 1}));
-    return true;
+bool CraftingSystem::has_queue() const {
+    return !queue.empty();
 }
 
 void CraftingSystem::select_by_mouse(float mx, float my, const SDL_FRect& panel_rect) {
@@ -103,8 +105,6 @@ void CraftingSystem::select_by_mouse(float mx, float my, const SDL_FRect& panel_
         }
     }
 }
-
-void CraftingSystem::update(float, float) {}
 
 void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect) {
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
@@ -238,4 +238,8 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
 
         TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, name, {238, 240, 243, 255});
     }
+}
+
+void CraftingSystem::draw_queue(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect& screen_rect) const {
+    queue.draw(renderer, font, screen_rect);
 }
