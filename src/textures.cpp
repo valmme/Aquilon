@@ -12,7 +12,7 @@ static SDL_Texture* CreateFallbackTexture(SDL_Renderer* renderer) {
         SIZE, SIZE);
 
     if (!tex) {
-        Logger::Log("APPLICATION", Logger::Level::Fatal,
+        Logger::Log("ASSETS", Logger::Level::Fatal,
                     "Failed to create fallback texture: %s", SDL_GetError());
         return nullptr;
     }
@@ -35,7 +35,7 @@ static SDL_Texture* LoadTexture(SDL_Renderer* renderer, SDL_Texture* fallback,
     SDL_Texture* tex = IMG_LoadTexture(renderer, file);
 
     if (!tex) {
-        Logger::Log("APPLICATION", Logger::Level::Error,
+        Logger::Log("ASSETS", Logger::Level::Error,
                     "Failed to load texture '%s' from '%s': %s",
                     label, file, SDL_GetError());
         return fallback;
@@ -51,7 +51,7 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     t.none = CreateFallbackTexture(renderer);
 
     if (!t.none) {
-        Logger::Log("APPLICATION", Logger::Level::Warn,
+        Logger::Log("ASSETS`", Logger::Level::Warn,
                     "Fallback texture 'none' could not be created.");
     }
 
@@ -69,7 +69,7 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     t.slot          = LoadTexture(renderer, t.none, "slot",          "resources/textures/slot.png");
     t.crafting_slot = LoadTexture(renderer, t.none, "crafting_slot", "resources/textures/crafting_slot.png");
 
-    Logger::Log("APPLICATION", Logger::Level::Info, "Texture loading complete.");
+    Logger::Log("ASSETS", Logger::Level::Info, "Texture loading complete.");
 
     return t;
 }
