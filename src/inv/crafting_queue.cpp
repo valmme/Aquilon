@@ -177,4 +177,42 @@ void CraftingQueue::draw(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect
     char percent_buf[24];
     snprintf(percent_buf, sizeof(percent_buf), "%.0f%%", progress_pct * 100.0f);
     TextRenderer::DrawText(renderer, font, bar_x + bar_w - 40.0f, bar_y - 2.0f, percent_buf, title_color);
+
+    float mouse_x = 0.0f, mouse_y = 0.0f;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+    if (mouse_x >= bg.x && mouse_x <= bg.x + bg.w && mouse_y >= bg.y && mouse_y <= bg.y + bg.h) {
+        char time_buf[64];
+        snprintf(time_buf, sizeof(time_buf), "Time: %.1fs", current.duration);
+
+        int name_w = 0, name_h = 0;
+        TTF_GetStringSize(font, current.recipe->name.c_str(), 0, &name_w, &name_h);
+        int time_w = 0, time_h = 0;
+        TTF_GetStringSize(font, time_buf, 0, &time_w, &time_h);
+
+        float pad = 6.0f;
+        float tip_w = std::max((float)name_w, (float)time_w) + pad * 2.0f;
+        float tip_h = (float)name_h + (float)time_h + pad * 3.0f;
+        float tip_x = (float)mouse_x + 12.0f;
+        float tip_y = (float)mouse_y + 12.0f;
+
+        if (tip_x + tip_w > screen_rect.x + screen_rect.w) {
+            tip_x = screen_rect.x + screen_rect.w - tip_w;
+        }
+        if (tip_y + tip_h > screen_rect.y + screen_rect.h) {
+            tip_y = (float)mouse_y - tip_h - 12.0f;
+        }
+        if (tip_x < screen_rect.x) tip_x = screen_rect.x;
+        if (tip_y < screen_rect.y) tip_y = screen_rect.y;
+
+        SDL_FRect tip_bg = { tip_x, tip_y, tip_w, tip_h };
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 10, 11, 14, 220);
+        SDL_RenderFillRect(renderer, &tip_bg);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+        SDL_SetRenderDrawColor(renderer, 60, 65, 75, 255);
+        SDL_RenderRect(renderer, &tip_bg);
+
+        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, current.recipe->name.c_str(), title_color);
+        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad + (float)name_h + pad, time_buf, muted);
+    }
 }

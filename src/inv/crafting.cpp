@@ -217,9 +217,10 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         const Recipe& r = recipes[hovered];
         SDL_FRect slot = slot_rect(panel_rect, hovered);
 
-        const char* name = r.name.c_str();
+        char title_buf[128];
+        snprintf(title_buf, sizeof(title_buf), "Craft: %s", r.name.c_str());
         int tw = 0, th = 0;
-        TTF_GetStringSize(font, name, 0, &tw, &th);
+        TTF_GetStringSize(font, title_buf, 0, &tw, &th);
 
         char time_buf[64];
         snprintf(time_buf, sizeof(time_buf), "Time: %.1fs", r.craft_duration);
@@ -235,6 +236,12 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         if (tip_x < panel_rect.x + PANEL_PAD) tip_x = panel_rect.x + PANEL_PAD;
         if (tip_x + tip_w > panel_rect.x + panel_rect.w - PANEL_PAD)
             tip_x = panel_rect.x + panel_rect.w - PANEL_PAD - tip_w;
+        if (tip_y < panel_rect.y + PANEL_PAD) {
+            tip_y = slot.y + slot.h + 4.0f;
+        }
+        if (tip_y + tip_h > panel_rect.y + panel_rect.h - PANEL_PAD) {
+            tip_y = panel_rect.y + panel_rect.h - PANEL_PAD - tip_h;
+        }
 
         SDL_FRect bg = { tip_x, tip_y, tip_w, tip_h };
         SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -244,7 +251,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         SDL_SetRenderDrawColor(renderer, 60, 65, 75, 255);
         SDL_RenderRect(renderer, &bg);
 
-        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, name, {238, 240, 243, 255});
+        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, title_buf, {238, 240, 243, 255});
         TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad + (float)th + pad, time_buf, {170, 176, 184, 255});
     }
 }
