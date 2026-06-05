@@ -3,7 +3,8 @@
 #include "inv/inventory.h"
 #include "textrenderer.h"
 #include <cstdio>
-#include <climits> 
+#include <climits>
+#include <algorithm>
 
 static constexpr float PANEL_PAD  = 8.0f;
 static constexpr float SLOT_W     = 42.0f;
@@ -51,6 +52,7 @@ void CraftingSystem::initialize_recipes(Textures* tex) {
         "Furnace",
         1,
         tex->furnace,
+        2.5f,
         ItemType::FURNACE,
         {
             { ItemType::STONE, 5 }
@@ -61,6 +63,7 @@ void CraftingSystem::initialize_recipes(Textures* tex) {
         "Drill",
         1,
         tex->drill,
+        3.0f,
         ItemType::DRILL,
         {
             { ItemType::IRON_PLATE, 3 }, { ItemType::FURNACE, 1 }
@@ -218,9 +221,14 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         int tw = 0, th = 0;
         TTF_GetStringSize(font, name, 0, &tw, &th);
 
+        char time_buf[64];
+        snprintf(time_buf, sizeof(time_buf), "Time: %.1fs", r.craft_duration);
+        int ttw = 0, tth = 0;
+        TTF_GetStringSize(font, time_buf, 0, &ttw, &tth);
+
         float pad = 4.0f;
-        float tip_w = (float)tw + pad * 2;
-        float tip_h = (float)th + pad * 2;
+        float tip_w = std::max((float)tw, (float)ttw) + pad * 2;
+        float tip_h = (float)th + (float)tth + pad * 3;
         float tip_x = slot.x + slot.w * 0.5f - tip_w * 0.5f;
         float tip_y = slot.y - tip_h - 4.0f;
 
@@ -237,6 +245,7 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         SDL_RenderRect(renderer, &bg);
 
         TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, name, {238, 240, 243, 255});
+        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad + (float)th + pad, time_buf, {170, 176, 184, 255});
     }
 }
 

@@ -21,6 +21,7 @@ struct Recipe {
     std::string name;
     int result_amount = 1;
     SDL_Texture* result_texture = nullptr;
+    float craft_duration = 2.5f;
     ItemType result_type = ItemType::NONE;
     std::vector<RecipeIngredient> ingredients;
 };

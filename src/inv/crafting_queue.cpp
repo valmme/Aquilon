@@ -95,7 +95,7 @@ bool CraftingQueue::build_queue_for_recipe(const Recipe* recipe,
     QueuedCraft queued;
     queued.recipe = recipe;
     queued.progress = 0.0f;
-    queued.duration = DEFAULT_CRAFT_DURATION;
+    queued.duration = recipe->craft_duration;
     queued.count = 1;
     out.push_back(queued);
     available[recipe->result_type] += recipe->result_amount;
