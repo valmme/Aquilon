@@ -1,4 +1,6 @@
-#pragma once
+#ifndef AQUILON_FURNACE_PANEL_H
+#define AQUILON_FURNACE_PANEL_H
+ 
 #include "inv/panel.h"
 #include "inv/item.h"
 #include "textures.h"
@@ -42,3 +44,5 @@ public:
 
     std::vector<FurnaceRecipe> recipes;
 };
+
+#endif // AQUILON_FURNACE_PANEL_H
