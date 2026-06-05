@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include "textrenderer.h"
+#include "localization.h"
 
 static constexpr float QUEUE_BG_ALPHA = 230.0f;
 static constexpr float QUEUE_ITEM_SIZE = 48.0f;
@@ -155,10 +156,12 @@ void CraftingQueue::draw(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect
     const SDL_Color title_color = {236, 238, 242, 255};
     const SDL_Color muted       = {120, 125, 135, 255};
 
-    TextRenderer::DrawText(renderer, font, icon_rect.x + icon_rect.w + 8.0f, icon_rect.y, current.recipe->name, title_color);
+    std::string localized_name = Localize(current.recipe->name);
+    TextRenderer::DrawText(renderer, font, icon_rect.x + icon_rect.w + 8.0f, icon_rect.y, localized_name.c_str(), title_color);
 
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%d in queue", size());
+    char buf[64];
+    std::string in_queue = Localize("in queue");
+    snprintf(buf, sizeof(buf), "%d %s", size(), in_queue.c_str());
     TextRenderer::DrawText(renderer, font, icon_rect.x + icon_rect.w + 8.0f, icon_rect.y + 18.0f, buf, muted);
 
     float bar_x = icon_rect.x;

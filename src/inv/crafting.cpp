@@ -2,6 +2,7 @@
 #include "inv/crafting_queue.h"
 #include "inv/inventory.h"
 #include "textrenderer.h"
+#include "localization.h"
 #include <cstdio>
 #include <climits>
 #include <algorithm>
@@ -233,19 +234,19 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         const Recipe& r = recipes[hovered];
         SDL_FRect slot = slot_rect(panel_rect, hovered);
 
-        char title_buf[128];
-        snprintf(title_buf, sizeof(title_buf), "Craft: %s", r.name.c_str());
+        std::string title = Localize("Craft") + ": " + Localize(r.name);
         int tw = 0, th = 0;
-        TTF_GetStringSize(font, title_buf, 0, &tw, &th);
+        TTF_GetStringSize(font, title.c_str(), 0, &tw, &th);
 
+        std::string time_label = Localize("Time");
         char time_buf[64];
-        snprintf(time_buf, sizeof(time_buf), "Time: %.1fs", r.craft_duration);
+        snprintf(time_buf, sizeof(time_buf), "%s: %.1fs", time_label.c_str(), r.craft_duration);
         int ttw = 0, tth = 0;
         TTF_GetStringSize(font, time_buf, 0, &ttw, &tth);
 
-        const char* labels = "Ingredients:";
+        std::string labels = Localize("Ingredients");
         int lw = 0, lh = 0;
-        TTF_GetStringSize(font, labels, 0, &lw, &lh);
+        TTF_GetStringSize(font, labels.c_str(), 0, &lw, &lh);
 
         int max_ing_w = 0;
         int line_height = 0;
@@ -293,13 +294,13 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
 
         float text_x = tip_x + pad;
         float text_y = tip_y + pad;
-        TextRenderer::DrawText(renderer, font, text_x, text_y, title_buf, {238, 240, 243, 255});
+        TextRenderer::DrawText(renderer, font, text_x, text_y, title.c_str(), {238, 240, 243, 255});
 
         text_y += (float)th + pad;
         TextRenderer::DrawText(renderer, font, text_x, text_y, time_buf, {170, 176, 184, 255});
 
         text_y += (float)tth + pad;
-        TextRenderer::DrawText(renderer, font, text_x, text_y, labels, {170, 176, 184, 255});
+        TextRenderer::DrawText(renderer, font, text_x, text_y, labels.c_str(), {170, 176, 184, 255});
 
         text_y += (float)lh + line_spacing;
         for (const auto& entry : ingredient_lines) {
