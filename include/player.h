@@ -7,6 +7,7 @@
 #include "gen/tile.h"
 #include "inv/item.h"
 #include <vector>
+#include <functional>
 
 class World;
 class Inventory;
@@ -100,6 +101,8 @@ public:
                                int visible_max_tile_x, int visible_max_tile_y) const;
     void draw_item_placement_preview(SDL_Renderer* renderer, const Camera& cam,
                                       const Inventory& inventory, float mouse_x, float mouse_y) const;
+    std::function<void(const PlacedObject&)> on_object_clicked;
+    
 
     SDL_FRect player;
 

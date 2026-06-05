@@ -138,13 +138,21 @@ int main() {
 
     Inventory inv(gui_engine, tex, debug_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
-//    FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
+    FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
     initialize_items(tex);
     inv.set_crafting_system(crafting);
     inv.set_active_panel(crafting);
 
+    player.on_object_clicked = [&](const Player::PlacedObject& obj) {
+        if (obj.type == ItemType::FURNACE) {
+            if (!inv.open) inv.open_window();
+            inv.set_active_panel(furnace_panel);
+        }
+    };
+
     inv.pick(item_stack(Item::FURNACE, 67));
     inv.pick(item_stack(Item::IRON_PLATE, 31));
+    inv.pick(item_stack(Item::COAL, 32));
 
     crafting->initialize_recipes(&tex);
 
@@ -366,6 +374,8 @@ int main() {
 
         float mouse_x = 0.0f, mouse_y = 0.0f;
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+
+        furnace_panel->update(delta_time);
         inv.update(mouse_x, mouse_y);
 
         const float view_left_world = cam.x;
@@ -478,6 +488,7 @@ int main() {
     Logger::Log("APPLICATION", Logger::Level::Info, "Released textures.");
 
     delete crafting;
+    delete furnace_panel;
 
     TextRenderer::ClearCache();
 

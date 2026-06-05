@@ -112,6 +112,7 @@ void Inventory::close_window() {
     gui.CloseInvWindow();
     open = false;
     window = nullptr;
+    active_panel = crafting;
 }
 
 void Inventory::handle_event(const SDL_Event& e) {

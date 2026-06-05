@@ -21,6 +21,9 @@ public:
 
     Panel* active_panel = nullptr;
 
+    void open_window();
+    void close_window();
+
     Inventory(GUIEngine& gui, Textures tex, TTF_Font* font, const InputConfig& input = InputConfig{});
     ~Inventory();
 
@@ -65,9 +68,6 @@ private:
 
     CraftingSystem* crafting = nullptr;
     InputConfig input;
-
-    void open_window();
-    void close_window();
 };
 
 

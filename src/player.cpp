@@ -74,12 +74,20 @@ void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera
 }
 
 void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, bool allow_world_interaction) {
-    if (!allow_world_interaction || inventory.open) {
-        return;
-    }
+    if (!allow_world_interaction || inventory.open) return;
+    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
 
-    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) {
-        return;
+    const int click_tile_x = (int)std::floor((cam.x + (float)e.button.x / cam.zoom) / 32.0f);
+    const int click_tile_y = (int)std::floor((cam.y + (float)e.button.y / cam.zoom) / 32.0f);
+
+    if (on_object_clicked) {
+        for (const PlacedObject& obj : placed_objects) {
+            if (click_tile_x >= obj.x && click_tile_x < obj.x + (int)obj.size.x &&
+                click_tile_y >= obj.y && click_tile_y < obj.y + (int)obj.size.y) {
+                on_object_clicked(obj);
+                return;
+            }
+        }
     }
 
     Item* dragged = inventory.cursor_item;
@@ -87,18 +95,15 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
         return;
     }
 
-    const int place_tile_x = (int)std::floor((cam.x + (float)e.button.x / cam.zoom) / 32.0f);
-    const int place_tile_y = (int)std::floor((cam.y + (float)e.button.y / cam.zoom) / 32.0f);
-
-    if (!can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size)) {
+    if (!can_place_at(placed_objects, click_tile_x, click_tile_y, dragged->size)) {
         return;
     }
 
     PlacedObject obj;
     obj.type = dragged->type;
     obj.texture = dragged->texture;
-    obj.x = place_tile_x;
-    obj.y = place_tile_y;
+    obj.x = click_tile_x;
+    obj.y = click_tile_y;
     obj.size = dragged->size;
 
     placed_objects.push_back(obj);

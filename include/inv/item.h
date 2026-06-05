@@ -11,6 +11,8 @@ enum class ItemType {
     IRON_ORE,
     IRON_PLATE,
     COPPER_ORE,
+    COAL,
+
     FURNACE,
     DRILL,
 
@@ -55,6 +57,7 @@ struct Item {
     static Item STONE;
     static Item IRON_ORE;
     static Item IRON_PLATE;
+    static Item COAL;
     static Item FURNACE;
     static Item DRILL;
 };
