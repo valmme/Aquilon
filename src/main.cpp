@@ -18,6 +18,7 @@
 #include "inv/inventory.h"
 #include "inv/item.h"
 #include "audio.h"
+#include "inv/panels/furnace_panel.h"
 
 const int TILE_SIZE = 32;
 
@@ -134,10 +135,13 @@ int main() {
     World world;
     Player player(config.input);
     Camera cam;
+
     Inventory inv(gui_engine, tex, debug_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
+//    FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
     initialize_items(tex);
     inv.set_crafting_system(crafting);
+    inv.set_active_panel(crafting);
 
     inv.pick(item_stack(Item::FURNACE, 67));
     inv.pick(item_stack(Item::IRON_PLATE, 31));

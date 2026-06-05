@@ -7,6 +7,7 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include "item.h"
+#include "inv/panel.h"
 #include "textures.h"
 
 class Inventory;
@@ -24,7 +25,7 @@ struct Recipe {
     std::vector<RecipeIngredient> ingredients;
 };
 
-class CraftingSystem {
+class CraftingSystem : public Panel {
 public:
     CraftingSystem(Textures& tex, TTF_Font* font);
 

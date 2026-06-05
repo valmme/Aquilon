@@ -8,6 +8,7 @@
 #include "slot.h"
 #include "item.h"
 #include "gui.h"
+#include "panel.h"
 #include "config.h"
 
 class CraftingSystem;
@@ -17,6 +18,8 @@ public:
     std::vector<Slot> slots;
     Item* cursor_item = nullptr;
     bool open = false;
+
+    Panel* active_panel = nullptr;
 
     Inventory(GUIEngine& gui, Textures tex, TTF_Font* font, const InputConfig& input = InputConfig{});
     ~Inventory();
@@ -47,13 +50,11 @@ public:
         return true;
     }
 
-    void set_crafting_system(CraftingSystem* system) {
-        crafting = system;
-    }
+    void set_crafting_system(CraftingSystem* system) { crafting = system; }
+    CraftingSystem* get_crafting_system() const { return crafting; }
 
-    CraftingSystem* get_crafting_system() const {
-        return crafting;
-    }
+    void set_active_panel(Panel* panel) { active_panel = panel; }
+    Panel* get_active_panel() const { return active_panel; }
 
     SDL_FRect craft_rect{};
 

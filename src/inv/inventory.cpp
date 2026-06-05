@@ -95,8 +95,8 @@ void Inventory::open_window() {
             content_rect.h
         };
 
-        if (crafting) {
-            crafting->draw_panel(renderer, craft_rect, *this);
+        if (active_panel) {
+            active_panel->draw_panel(renderer, craft_rect, *this);
         }
 
         SDL_SetRenderClipRect(renderer, nullptr);
