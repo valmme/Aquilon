@@ -378,6 +378,25 @@ bool GUIEngine::HandleEvent(const SDL_Event& e) {
     return consumed;
 }
 
+bool GUIEngine::IsMouseOverAnyWindow(const vec2& mouse_pos) const {
+    if (main_window && main_window->GetContentRect().x <= mouse_pos.x && mouse_pos.x <= main_window->GetContentRect().x + main_window->GetContentRect().w &&
+        main_window->GetContentRect().y <= mouse_pos.y && mouse_pos.y <= main_window->GetContentRect().y + main_window->GetContentRect().h) {
+        return true;
+    }
+
+    if (inv_window && inv_window->GetContentRect().x <= mouse_pos.x && mouse_pos.x <= inv_window->GetContentRect().x + inv_window->GetContentRect().w &&
+        inv_window->GetContentRect().y <= mouse_pos.y && mouse_pos.y <= inv_window->GetContentRect().y + inv_window->GetContentRect().h) {
+        return true;
+    }
+
+    if (info_window && info_window->GetContentRect().x <= mouse_pos.x && mouse_pos.x <= info_window->GetContentRect().x + info_window->GetContentRect().w &&
+        info_window->GetContentRect().y <= mouse_pos.y && mouse_pos.y <= info_window->GetContentRect().y + info_window->GetContentRect().h) {
+        return true;
+    }
+
+    return false;
+}
+
 void GUIEngine::RenderAll() {
     if (main_window) main_window->Render(renderer);
     if (inv_window) inv_window->Render(renderer);

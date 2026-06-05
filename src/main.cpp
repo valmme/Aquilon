@@ -380,7 +380,8 @@ int main() {
         };
         Tile hovered_tile_data = world.get_tile(hovered_tile.x, hovered_tile.y);
 
-        resource_panel_visible = hovered_tile_data.type == STONE || hovered_tile_data.type == IRON_ORE;
+        bool mouse_over_gui = gui_engine.IsMouseOverAnyWindow(Vec2{(float)mouse_x, (float)mouse_y});
+        resource_panel_visible = !mouse_over_gui && (hovered_tile_data.type == STONE || hovered_tile_data.type == IRON_ORE);
         resource_panel_name = hovered_tile_data.type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         resource_panel_yield = hovered_tile_data.yield;
         resource_panel_type = hovered_tile_data.type;

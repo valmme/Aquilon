@@ -69,6 +69,8 @@ public:
     bool HandleEvent(const SDL_Event& e);
     GUIWindow* GetWindow() const;
 
+    bool IsMouseOverAnyWindow(const vec2& mouse_pos) const;
+
     // inventory
     GUIWindow* CreateInvWindow(SDL_FRect size, const std::string& title);
     void CloseInvWindow();
