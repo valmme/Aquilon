@@ -38,11 +38,27 @@ static SDL_FRect slot_rect(const SDL_FRect& panel, int i) {
 CraftingSystem::CraftingSystem(Textures& tex, TTF_Font* font)
     : tex(tex), font(font) {}
 
+static SDL_Texture* ingredient_texture(const Textures& tex, ItemType type) {
+    switch (type) {
+        case ItemType::STONE: return tex.stone;
+        case ItemType::IRON_ORE: return tex.iron_ore;
+        case ItemType::IRON_PLATE: return tex.iron_plate;
+        case ItemType::COAL: return tex.coal;
+        case ItemType::FURNACE: return tex.furnace;
+        case ItemType::DRILL: return tex.drill;
+        default: return nullptr;
+    }
+}
+
 const char* CraftingSystem::item_type_name(ItemType type) {
     switch (type) {
         case ItemType::STONE: return "Stone";
         case ItemType::IRON_ORE: return "Iron Ore";
+        case ItemType::IRON_PLATE: return "Iron Plate";
+        case ItemType::COPPER_ORE: return "Copper Ore";
+        case ItemType::COAL: return "Coal";
         case ItemType::FURNACE: return "Furnace";
+        case ItemType::DRILL: return "Drill";
         default: return "Unknown";
     }
 }
@@ -227,9 +243,33 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         int ttw = 0, tth = 0;
         TTF_GetStringSize(font, time_buf, 0, &ttw, &tth);
 
+        const char* labels = "Ingredients:";
+        int lw = 0, lh = 0;
+        TTF_GetStringSize(font, labels, 0, &lw, &lh);
+
+        int max_ing_w = 0;
+        int line_height = 0;
+        float icon_size = 18.0f;
+        float line_spacing = 2.0f;
+        std::vector<std::pair<ItemType, std::string>> ingredient_lines;
+        ingredient_lines.reserve(r.ingredients.size());
+        for (const RecipeIngredient& ing : r.ingredients) {
+            char count_buf[16];
+            snprintf(count_buf, sizeof(count_buf), "x%d", ing.amount);
+            int cw = 0, ch = 0;
+            TTF_GetStringSize(font, count_buf, 0, &cw, &ch);
+            max_ing_w = std::max(max_ing_w, (int)(icon_size + 2.0f + cw));
+            line_height = std::max(line_height, std::max((int)icon_size, ch));
+            ingredient_lines.emplace_back(ing.type, std::string(count_buf));
+        }
+
+        if (line_height == 0) {
+            line_height = (int)icon_size;
+        }
+
         float pad = 4.0f;
-        float tip_w = std::max((float)tw, (float)ttw) + pad * 2;
-        float tip_h = (float)th + (float)tth + pad * 3;
+        float tip_w = std::max({(float)tw, (float)ttw, (float)lw, (float)max_ing_w}) + pad * 2.0f;
+        float tip_h = (float)th + (float)tth + (float)lh + ingredient_lines.size() * (float)line_height + line_spacing * (ingredient_lines.empty() ? 0 : ingredient_lines.size() - 1) + pad * 4.0f;
         float tip_x = slot.x + slot.w * 0.5f - tip_w * 0.5f;
         float tip_y = slot.y - tip_h - 4.0f;
 
@@ -251,8 +291,31 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
         SDL_SetRenderDrawColor(renderer, 60, 65, 75, 255);
         SDL_RenderRect(renderer, &bg);
 
-        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad, title_buf, {238, 240, 243, 255});
-        TextRenderer::DrawText(renderer, font, tip_x + pad, tip_y + pad + (float)th + pad, time_buf, {170, 176, 184, 255});
+        float text_x = tip_x + pad;
+        float text_y = tip_y + pad;
+        TextRenderer::DrawText(renderer, font, text_x, text_y, title_buf, {238, 240, 243, 255});
+
+        text_y += (float)th + pad;
+        TextRenderer::DrawText(renderer, font, text_x, text_y, time_buf, {170, 176, 184, 255});
+
+        text_y += (float)tth + pad;
+        TextRenderer::DrawText(renderer, font, text_x, text_y, labels, {170, 176, 184, 255});
+
+        text_y += (float)lh + line_spacing;
+        for (const auto& entry : ingredient_lines) {
+            ItemType type = entry.first;
+            const std::string& count_str = entry.second;
+            SDL_Texture* icon = ingredient_texture(tex, type);
+            if (icon) {
+                SDL_SetTextureScaleMode(icon, SDL_SCALEMODE_NEAREST);
+                SDL_FRect icon_rect = { text_x, text_y, icon_size, icon_size };
+                SDL_RenderTexture(renderer, icon, nullptr, &icon_rect);
+            }
+            float count_x = text_x + icon_size + 2.0f;
+            float count_y = text_y + ((float)line_height - (float)TTF_GetFontHeight(font)) * 0.5f;
+            TextRenderer::DrawText(renderer, font, count_x, count_y, count_str.c_str(), {220, 196, 134, 255});
+            text_y += (float)line_height + line_spacing;
+        }
     }
 }
 
