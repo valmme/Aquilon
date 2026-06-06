@@ -7,11 +7,13 @@
 #include "stb_perlin.h"
 
 #define WORLD_STONE_THRESHOLD 0.82f
+#define WORLD_COAL_THRESHOLD  0.58f
 #define WORLD_IRON_THRESHOLD  0.65f
 #define WORLD_ICE_THRESHOLD   0.55f
 
 #define WORLD_STONE_YIELD_MAX 9.0f
 #define WORLD_IRON_YIELD_MAX  9.0f
+#define WORLD_COAL_YIELD_MAX  7.0f
 #define WORLD_ICE_YIELD       1
 
 World::World() {}

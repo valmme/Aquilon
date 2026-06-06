@@ -462,6 +462,7 @@ int main() {
                     else if (t.type == SNOW) current = tex.snow;
                     else if (t.type == STONE) current = tex.stone;
                     else if (t.type == IRON_ORE) current = tex.iron_ore;
+                    else if (t.type == COAL) current = tex.coal;
 
                     if (!current) continue;
 
@@ -472,7 +473,7 @@ int main() {
                         (float)TILE_SIZE
                     );
 
-                    float angle = (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
+                    float angle = t.type == ICE ? 0 : (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
                     SDL_RenderTextureRotated(renderer, current, nullptr, &dst, angle, nullptr, SDL_FLIP_NONE);
                 }
             }
