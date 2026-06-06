@@ -15,6 +15,7 @@ enum class ItemType {
 
     FURNACE,
     DRILL,
+    CONVEYOR,
 
     UNDEFINED,
     NONE
@@ -60,6 +61,7 @@ struct Item {
     static Item COAL;
     static Item FURNACE;
     static Item DRILL;
+    static Item CONVEYOR;
 };
 
 void initialize_items(Textures tex);

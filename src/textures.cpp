@@ -64,6 +64,7 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     t.coal       = LoadTexture(renderer, t.none, "coal",       "resources/textures/coal.png");
     t.furnace    = LoadTexture(renderer, t.none, "furnace",    "resources/textures/furnace.png");
     t.drill      = LoadTexture(renderer, t.none, "drill",      "resources/textures/drill.png");
+    t.conveyor   = LoadTexture(renderer, t.none, "conveyor",   "resources/textures/conveyor.png");
 
     // ui
     t.slot          = LoadTexture(renderer, t.none, "slot",          "resources/textures/slot.png");
@@ -84,6 +85,7 @@ void FreeTextures(Textures& t) {
     if (t.coal) SDL_DestroyTexture(t.coal);
     if (t.furnace) SDL_DestroyTexture(t.furnace);
     if (t.drill) SDL_DestroyTexture(t.drill);
+    if (t.conveyor) SDL_DestroyTexture(t.conveyor);
     if (t.slot) SDL_DestroyTexture(t.slot);
     if (t.crafting_slot) SDL_DestroyTexture(t.crafting_slot);
     if (t.none) SDL_DestroyTexture(t.none);
