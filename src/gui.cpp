@@ -34,20 +34,22 @@ void GUIButton::HandleMouseMove(float mouse_x, float mouse_y) {
 }
 
 SDL_Color GUIButton::GetBackgroundColor() const {
-    if (pressed) return {100, 120, 150, 255};
-    if (hovered) return {70, 100, 140, 255};
-    return {50, 80, 120, 255};
+    if (pressed) return {38, 41, 48, 255};
+    if (hovered) return {30, 33, 39, 255};
+    return {22, 24, 29, 255};
 }
 
 SDL_Color GUIButton::GetTextColor() const {
-    if (pressed) return {200, 220, 255, 255};
-    if (hovered) return {220, 240, 255, 255};
-    return {180, 200, 230, 255};
+    if (pressed) return {242, 244, 246, 255};
+    if (hovered) return {210, 213, 218, 255};
+    return {155, 160, 168, 255};
 }
 
 void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
     SDL_Color bg_color = GetBackgroundColor();
-    SDL_Color border_color = hovered ? SDL_Color{150, 180, 220, 255} : SDL_Color{100, 130, 170, 255};
+    SDL_Color border_color = hovered
+    ? SDL_Color{60, 65, 75, 255}
+    : SDL_Color{42, 46, 54, 255};
     
     SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
     SDL_RenderFillRect(renderer, &rect);
@@ -65,9 +67,11 @@ void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
     
     if (font) {
         SDL_Color text_color = GetTextColor();
-        float text_x = rect.x + 16.0f;
-        float font_h = (float)TTF_GetFontHeight(font);
-        float text_y = rect.y + (rect.h - font_h) * 0.5f;
+        int text_w = 0;
+        int text_h = 0;
+        TTF_GetStringSize(font, label.c_str(), 0, &text_w, &text_h);
+        float text_x = rect.x + (rect.w - (float)text_w) * 0.5f;
+        float text_y = rect.y + (rect.h - (float)text_h) * 0.5f;
         
         TextRenderer::DrawText(renderer, font, text_x, text_y, label, text_color);
     }
