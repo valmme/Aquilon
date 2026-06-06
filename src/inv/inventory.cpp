@@ -5,7 +5,7 @@
 #include "localization.h"
 #include <cstdio>
 
-static constexpr float SLOT_SIZE      = 35.0f;
+static constexpr float SLOT_SIZE      = 40.0f;
 static constexpr float SLOT_SPACING   = 0.0f;
 static constexpr int   INVENTORY_COLS = 10;
 static constexpr int   INVENTORY_ROWS = 9;
