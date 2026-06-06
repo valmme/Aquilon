@@ -61,12 +61,13 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     t.stone      = LoadTexture(renderer, t.none, "stone",      "resources/textures/stone.png");
     t.iron_ore   = LoadTexture(renderer, t.none, "iron_ore",   "resources/textures/iron_ore.png");
     t.iron_plate = LoadTexture(renderer, t.none, "iron_plate", "resources/textures/iron_plate.png");
-    t.coal       = LoadTexture(renderer, t.none, "coal", "resources/textures/coal.png");
+    t.coal       = LoadTexture(renderer, t.none, "coal",       "resources/textures/coal.png");
     t.furnace    = LoadTexture(renderer, t.none, "furnace",    "resources/textures/furnace.png");
     t.drill      = LoadTexture(renderer, t.none, "drill",      "resources/textures/drill.png");
 
     // ui
     t.slot          = LoadTexture(renderer, t.none, "slot",          "resources/textures/slot.png");
+    t.fuel_slot     = LoadTexture(renderer, t.none, "fuel_slot",     "resources/textures/fuel_slot.png");
     t.crafting_slot = LoadTexture(renderer, t.none, "crafting_slot", "resources/textures/crafting_slot.png");
 
     Logger::Log("ASSETS", Logger::Level::Info, "Texture loading complete.");

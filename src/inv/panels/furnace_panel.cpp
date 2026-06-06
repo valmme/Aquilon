@@ -319,10 +319,12 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
     float fuel_bar_y = fuel_r.y + SLOT_SIZE * 0.5f - BAR_H * 0.5f;
     SDL_FRect fuel_bar = { fuel_bar_x, fuel_bar_y, fuel_bar_w, BAR_H };
 
-    auto draw_slot = [&](const SDL_FRect& r, Item* item, bool hov) {
-        if (tex.slot) {
-            SDL_SetTextureScaleMode(tex.slot, SDL_SCALEMODE_NEAREST);
-            SDL_RenderTexture(renderer, tex.slot, nullptr, &r);
+    auto draw_slot = [&](const SDL_FRect& r, Item* item, bool hov, bool is_fuel = false) {
+        SDL_Texture* slot_tex = (is_fuel && tex.fuel_slot) ? tex.fuel_slot : tex.slot;
+
+        if (slot_tex) {
+            SDL_SetTextureScaleMode(slot_tex, SDL_SCALEMODE_NEAREST);
+            SDL_RenderTexture(renderer, slot_tex, nullptr, &r);
         } 
         
         else {
@@ -356,7 +358,7 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
 
     draw_slot(input_r,  input_slot,  hovered_slot == 0);
     draw_slot(output_r, output_slot, hovered_slot == 2);
-    draw_slot(fuel_r,   fuel_slot,   hovered_slot == 1);
+    draw_slot(fuel_r,   fuel_slot,   hovered_slot == 1, true);
 
     SDL_SetRenderDrawColor(renderer, 26, 29, 35, 255);
     SDL_RenderFillRect(renderer, &craft_bar);

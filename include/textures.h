@@ -20,6 +20,7 @@ struct Textures {
 
     // ui
     SDL_Texture* slot;
+    SDL_Texture* fuel_slot;
     SDL_Texture* crafting_slot;
 };
 
