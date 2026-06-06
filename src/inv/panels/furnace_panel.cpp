@@ -413,7 +413,7 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
 
     if (fuel_remaining > 0.0f) {
         SDL_FRect fill = { fuel_bar.x, fuel_bar.y, fuel_bar.w * fuel_remaining, BAR_H };
-        SDL_SetRenderDrawColor(renderer, 80, 180, 100, 255);
+        SDL_SetRenderDrawColor(renderer, 160, 40, 40, 255);
         SDL_RenderFillRect(renderer, &fill);
     }
 }
