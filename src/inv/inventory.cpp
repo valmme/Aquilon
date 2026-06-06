@@ -145,7 +145,11 @@ void Inventory::handle_event(const SDL_Event& e) {
         }
     }
 
-    if (crafting) {
+    if (active_panel) {
+        active_panel->handle_event(e, *this, craft_rect);
+    } 
+    
+    else if (crafting) {
         crafting->handle_event(e, *this, craft_rect);
     }
 }
@@ -163,7 +167,11 @@ void Inventory::update(float mx, float my) {
     for (Slot& slot : slots)
         slot.selected = PointInRec(mx, my, slot.dest);
 
-    if (crafting) {
+    if (active_panel) {
+        active_panel->select_by_mouse(mx, my, craft_rect);
+    }
+    
+    else if (crafting) {
         crafting->select_by_mouse(mx, my, craft_rect);
     }
 }

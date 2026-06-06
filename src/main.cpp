@@ -140,13 +140,17 @@ int main() {
     Inventory inv(gui_engine, tex, debug_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
     FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
+    furnace_panel->initialize_recipes();
     initialize_items(tex);
     inv.set_crafting_system(crafting);
     inv.set_active_panel(crafting);
 
     player.on_object_clicked = [&](const Player::PlacedObject& obj) {
         if (obj.type == ItemType::FURNACE) {
-            if (!inv.open) inv.open_window();
+            if (!inv.open) {
+                inv.open = true;
+                inv.open_window();
+            }
             inv.set_active_panel(furnace_panel);
         }
     };
