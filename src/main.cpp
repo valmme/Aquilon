@@ -132,6 +132,7 @@ int main() {
                     "Debug overlay font not found; Game Status text will not render.");
     }
 
+
     World world;
     Player player(config.input);
     Camera cam;
