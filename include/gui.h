@@ -7,6 +7,27 @@
 #include <functional>
 #include <string>
 
+class GUIButton {
+public:
+    SDL_FRect rect;
+    std::string label;
+    bool hovered;
+    bool pressed;
+    std::function<void()> on_click;
+    
+    GUIButton(SDL_FRect rect, const std::string& label);
+    
+    bool IsMouseOver(float mouse_x, float mouse_y) const;
+    void HandleMouseDown(float mouse_x, float mouse_y);
+    void HandleMouseUp(float mouse_x, float mouse_y);
+    void HandleMouseMove(float mouse_x, float mouse_y);
+    void Draw(SDL_Renderer* renderer, TTF_Font* font);
+    
+private:
+    SDL_Color GetBackgroundColor() const;
+    SDL_Color GetTextColor() const;
+};
+
 class GUIWindow {
 public:
     SDL_FRect size;

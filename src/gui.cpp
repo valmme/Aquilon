@@ -3,6 +3,75 @@
 #include "logger.h"
 #include <cmath>
 
+GUIButton::GUIButton(SDL_FRect rect, const std::string& label)
+    : rect(rect), label(label), hovered(false), pressed(false) {}
+
+bool GUIButton::IsMouseOver(float mouse_x, float mouse_y) const {
+    return mouse_x >= rect.x && mouse_x <= rect.x + rect.w &&
+           mouse_y >= rect.y && mouse_y <= rect.y + rect.h;
+}
+
+void GUIButton::HandleMouseDown(float mouse_x, float mouse_y) {
+    if (IsMouseOver(mouse_x, mouse_y)) {
+        pressed = true;
+    }
+}
+
+void GUIButton::HandleMouseUp(float mouse_x, float mouse_y) {
+    if (pressed && IsMouseOver(mouse_x, mouse_y)) {
+        if (on_click) {
+            on_click();
+        }
+    }
+    pressed = false;
+}
+
+void GUIButton::HandleMouseMove(float mouse_x, float mouse_y) {
+    hovered = IsMouseOver(mouse_x, mouse_y);
+    if (!hovered) {
+        pressed = false;
+    }
+}
+
+SDL_Color GUIButton::GetBackgroundColor() const {
+    if (pressed) return {100, 120, 150, 255};
+    if (hovered) return {70, 100, 140, 255};
+    return {50, 80, 120, 255};
+}
+
+SDL_Color GUIButton::GetTextColor() const {
+    if (pressed) return {200, 220, 255, 255};
+    if (hovered) return {220, 240, 255, 255};
+    return {180, 200, 230, 255};
+}
+
+void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
+    SDL_Color bg_color = GetBackgroundColor();
+    SDL_Color border_color = hovered ? SDL_Color{150, 180, 220, 255} : SDL_Color{100, 130, 170, 255};
+    
+    SDL_SetRenderDrawColor(renderer, bg_color.r, bg_color.g, bg_color.b, bg_color.a);
+    SDL_RenderFillRect(renderer, &rect);
+    
+    SDL_SetRenderDrawColor(renderer, border_color.r, border_color.g, border_color.b, border_color.a);
+    SDL_FRect border_top = {rect.x, rect.y, rect.w, 2.0f};
+    SDL_FRect border_bottom = {rect.x, rect.y + rect.h - 2.0f, rect.w, 2.0f};
+    SDL_FRect border_left = {rect.x, rect.y, 2.0f, rect.h};
+    SDL_FRect border_right = {rect.x + rect.w - 2.0f, rect.y, 2.0f, rect.h};
+    
+    SDL_RenderFillRect(renderer, &border_top);
+    SDL_RenderFillRect(renderer, &border_bottom);
+    SDL_RenderFillRect(renderer, &border_left);
+    SDL_RenderFillRect(renderer, &border_right);
+    
+    if (font) {
+        SDL_Color text_color = GetTextColor();
+        float text_x = rect.x + 16.0f;
+        float text_y = rect.y + (rect.h - 20.0f) * 0.5f;
+        
+        TextRenderer::DrawText(renderer, font, text_x, text_y, label, text_color);
+    }
+}
+
 static constexpr SDL_Color GUI_BG_COLOR = {14, 15, 18, 248};
 static constexpr SDL_Color GUI_BORDER_COLOR = {42, 46, 54, 255};
 static constexpr SDL_Color GUI_TITLE_BG_COLOR = {18, 19, 23, 255};
