@@ -6,7 +6,7 @@
 #include <algorithm>
 
 static constexpr float PANEL_PAD   = 10.0f;
-static constexpr float SLOT_SIZE    = 44.0f;
+static constexpr float SLOT_SIZE    = 35.0f;
 static constexpr float ICON_SIZE    = 72.0f;
 static constexpr float BAR_H        = 8.0f;
 static constexpr float BAR_W        = 126.0f;
@@ -20,34 +20,22 @@ static SDL_FRect furnace_icon_rect(const SDL_FRect& panel) {
     };
 }
 
+static float slots_row_y(const SDL_FRect& panel) {
+    float main_area_y = panel.y + PANEL_PAD + 22.0f;
+    float main_area_h = ICON_SIZE + 20.0f;
+    return main_area_y + main_area_h + 10.0f;
+}
+
 static SDL_FRect input_slot_rect(const SDL_FRect& panel) {
-    SDL_FRect icon = furnace_icon_rect(panel);
-    return {
-        icon.x - SLOT_SIZE - 18.0f,
-        icon.y + icon.h + 24.0f,
-        SLOT_SIZE,
-        SLOT_SIZE
-    };
+    return { panel.x + PANEL_PAD, slots_row_y(panel), SLOT_SIZE, SLOT_SIZE };
 }
 
 static SDL_FRect fuel_slot_rect(const SDL_FRect& panel) {
-    SDL_FRect in = input_slot_rect(panel);
-    return {
-        in.x + SLOT_SIZE + 16.0f,
-        in.y,
-        SLOT_SIZE,
-        SLOT_SIZE
-    };
+    return { panel.x + PANEL_PAD, slots_row_y(panel) + SLOT_SIZE + 8.0f, SLOT_SIZE, SLOT_SIZE };
 }
 
 static SDL_FRect output_slot_rect(const SDL_FRect& panel) {
-    SDL_FRect icon = furnace_icon_rect(panel);
-    return {
-        icon.x + icon.w + 22.0f,
-        icon.y + icon.h + 10.0f,
-        SLOT_SIZE,
-        SLOT_SIZE
-    };
+    return { panel.x + panel.w - PANEL_PAD - SLOT_SIZE, slots_row_y(panel), SLOT_SIZE, SLOT_SIZE };
 }
 
 static SDL_FRect progress_rect(const SDL_FRect& panel) {
@@ -239,83 +227,167 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
     const SDL_Color white = {238, 240, 243, 255};
     const SDL_Color muted = {120, 126, 134, 255};
     const SDL_Color amber = {220, 196, 134, 255};
+    const SDL_Color red   = {200,  60,  60, 255};
 
-    if (font) {
-        TextRenderer::DrawText(renderer, font, panel_rec.x + PANEL_PAD, panel_rec.y + 4.0f, Localize("Furnace"), white);
+    {
+        bool active    = fuel_remaining > 0.0f;
+        bool has_input = input_slot && input_slot->amount > 0;
+        bool has_fuel  = fuel_slot  && fuel_slot->amount  > 0;
+
+        std::string status_text;
+        SDL_Color   status_col;
+
+        if (!has_input) {
+            status_text = Localize("No input");
+            status_col  = muted;
+        } 
+        
+        else if (!active && !has_fuel) {
+            status_text = Localize("No fuel");
+            status_col  = red;
+        } 
+        
+        else {
+            status_text = Localize("Smelting...");
+            status_col  = amber;
+        }
+
+        float dot_r = 4.0f;
+        float dot_x = panel_rec.x + PANEL_PAD + dot_r;
+        float dot_y = panel_rec.y + PANEL_PAD + dot_r + 2.0f;
+
+        SDL_FRect status_bg = {
+            panel_rec.x + PANEL_PAD - 2.0f,
+            panel_rec.y + PANEL_PAD - 2.0f,
+            panel_rec.w - PANEL_PAD * 2.0f + 4.0f,
+            18.0f
+        };
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, status_col.r, status_col.g, status_col.b, 20);
+        SDL_RenderFillRect(renderer, &status_bg);
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+
+        SDL_SetRenderDrawColor(renderer, status_col.r, status_col.g, status_col.b, 255);
+        SDL_FRect dot = { dot_x - dot_r, dot_y - dot_r, dot_r * 2.0f, dot_r * 2.0f };
+        SDL_RenderFillRect(renderer, &dot);
+
+        if (font)
+            TextRenderer::DrawText(renderer, font,
+                dot_x + dot_r + 4.0f, panel_rec.y + PANEL_PAD,
+                status_text, status_col);
     }
 
-    SDL_FRect icon = furnace_icon_rect(panel_rec);
-    SDL_SetRenderDrawColor(renderer, 26, 28, 34, 255);
-    SDL_RenderFillRect(renderer, &icon);
-    SDL_SetRenderDrawColor(renderer, 70, 76, 90, 255);
-    SDL_RenderRect(renderer, &icon);
+    float main_area_y = panel_rec.y + PANEL_PAD + 22.0f;
+    float main_area_h = ICON_SIZE + 20.0f;
+    SDL_FRect main_area = {
+        panel_rec.x + PANEL_PAD,
+        main_area_y,
+        panel_rec.w - PANEL_PAD * 2.0f,
+        main_area_h
+    };
+
+    SDL_SetRenderDrawColor(renderer, 20, 22, 27, 255);
+    SDL_RenderFillRect(renderer, &main_area);
+    SDL_SetRenderDrawColor(renderer, 32, 36, 44, 255);
+    SDL_RenderRect(renderer, &main_area);
 
     if (tex.furnace) {
-        SDL_FRect icon_in = { icon.x + 8.0f, icon.y + 8.0f, icon.w - 16.0f, icon.h - 16.0f };
-        SDL_RenderTexture(renderer, tex.furnace, nullptr, &icon_in);
+        SDL_FRect ficon = {
+            main_area.x + main_area.w * 0.5f - ICON_SIZE * 0.5f,
+            main_area.y + main_area.h * 0.5f - ICON_SIZE * 0.5f,
+            ICON_SIZE, ICON_SIZE
+        };
+        SDL_SetTextureScaleMode(tex.furnace, SDL_SCALEMODE_NEAREST);
+        SDL_RenderTexture(renderer, tex.furnace, nullptr, &ficon);
     }
 
-    SDL_FRect input_r = input_slot_rect(panel_rec);
-    SDL_FRect fuel_r  = fuel_slot_rect(panel_rec);
-    SDL_FRect out_r   = output_slot_rect(panel_rec);
-    SDL_FRect bar_r   = progress_rect(panel_rec);
+    float slots_y = main_area.y + main_area.h + 10.0f;
+    float left_x  = panel_rec.x + PANEL_PAD;
+    float right_x = panel_rec.x + panel_rec.w - PANEL_PAD - SLOT_SIZE;
 
-    auto draw_slot = [&](const SDL_FRect& r, Item* item, const char* label, bool hov) {
-        SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
-        SDL_RenderFillRect(renderer, &r);
+    SDL_FRect input_r  = { left_x,  slots_y,               SLOT_SIZE, SLOT_SIZE };
+    SDL_FRect fuel_r   = { left_x,  slots_y + SLOT_SIZE + 8.0f, SLOT_SIZE, SLOT_SIZE };
+    SDL_FRect output_r = { right_x, slots_y,               SLOT_SIZE, SLOT_SIZE };
+
+    float craft_bar_x = input_r.x + SLOT_SIZE + 8.0f;
+    float craft_bar_w = output_r.x - craft_bar_x - 8.0f;
+    float craft_bar_y = input_r.y + SLOT_SIZE * 0.5f - BAR_H * 0.5f;
+    SDL_FRect craft_bar = { craft_bar_x, craft_bar_y, craft_bar_w, BAR_H };
+
+    float fuel_bar_x = fuel_r.x + SLOT_SIZE + 8.0f;
+    float fuel_bar_w = output_r.x + SLOT_SIZE - fuel_bar_x;
+    float fuel_bar_y = fuel_r.y + SLOT_SIZE * 0.5f - BAR_H * 0.5f;
+    SDL_FRect fuel_bar = { fuel_bar_x, fuel_bar_y, fuel_bar_w, BAR_H };
+
+    auto draw_slot = [&](const SDL_FRect& r, Item* item, bool hov) {
+        if (tex.slot) {
+            SDL_SetTextureScaleMode(tex.slot, SDL_SCALEMODE_NEAREST);
+            SDL_RenderTexture(renderer, tex.slot, nullptr, &r);
+        } 
+        
+        else {
+            SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
+            SDL_RenderFillRect(renderer, &r);
+            SDL_SetRenderDrawColor(renderer, 44, 48, 58, 255);
+            SDL_RenderRect(renderer, &r);
+        }
 
         if (hov) {
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 18);
+            SDL_SetRenderDrawColor(renderer, 255, 255, 255, 22);
             SDL_RenderFillRect(renderer, &r);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
         }
 
-        SDL_SetRenderDrawColor(renderer, 44, 48, 58, 255);
-        SDL_RenderRect(renderer, &r);
-
         if (item && item->texture) {
             SDL_FRect icon2 = { r.x + 5.0f, r.y + 5.0f, r.w - 10.0f, r.h - 10.0f };
+            SDL_SetTextureScaleMode(item->texture, SDL_SCALEMODE_NEAREST);
             SDL_RenderTexture(renderer, item->texture, nullptr, &icon2);
         }
 
         if (font && item && item->amount > 1) {
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", item->amount);
-            TextRenderer::DrawText(renderer, font, r.x + r.w - 16.0f, r.y + r.h - (float)TTF_GetFontHeight(font) - 3.0f, buf, amber);
-        }
-
-        if (font) {
-            TextRenderer::DrawText(renderer, font, r.x, r.y + r.h + 3.0f, Localize(label), muted);
+            float fh = (float)TTF_GetFontHeight(font);
+            TextRenderer::DrawText(renderer, font,
+                r.x + r.w - 16.0f, r.y + r.h - fh - 3.0f, buf, amber);
         }
     };
 
-    draw_slot(input_r, input_slot, "Input", hovered_slot == 0);
-    draw_slot(fuel_r, fuel_slot, "Fuel", hovered_slot == 1);
-    draw_slot(out_r, output_slot, "Output", hovered_slot == 2);
+    draw_slot(input_r,  input_slot,  hovered_slot == 0);
+    draw_slot(output_r, output_slot, hovered_slot == 2);
+    draw_slot(fuel_r,   fuel_slot,   hovered_slot == 1);
 
-    SDL_SetRenderDrawColor(renderer, 60, 65, 75, 255);
-    SDL_RenderLine(renderer, input_r.x + input_r.w, input_r.y + input_r.h * 0.5f, out_r.x, out_r.y + out_r.h * 0.5f);
-
-    SDL_SetRenderDrawColor(renderer, 30, 33, 40, 255);
-    SDL_RenderFillRect(renderer, &bar_r);
-    SDL_SetRenderDrawColor(renderer, 44, 48, 58, 255);
-    SDL_RenderRect(renderer, &bar_r);
+    SDL_SetRenderDrawColor(renderer, 26, 29, 35, 255);
+    SDL_RenderFillRect(renderer, &craft_bar);
+    SDL_SetRenderDrawColor(renderer, 40, 44, 52, 255);
+    SDL_RenderRect(renderer, &craft_bar);
 
     if (smelt_progress > 0.0f) {
-        SDL_FRect fill = { bar_r.x, bar_r.y, bar_r.w * smelt_progress, bar_r.h };
+        SDL_FRect fill = { craft_bar.x, craft_bar.y, craft_bar.w * smelt_progress, BAR_H };
         SDL_SetRenderDrawColor(renderer, 220, 140, 60, 255);
         SDL_RenderFillRect(renderer, &fill);
     }
 
+    if (font) {
+        char pct[16];
+        snprintf(pct, sizeof(pct), "%.0f%%", smelt_progress * 100.0f);
+        int tw = 0, th = 0;
+        TTF_GetStringSize(font, pct, 0, &tw, &th);
+        TextRenderer::DrawText(renderer, font,
+            craft_bar.x + craft_bar.w - (float)tw,
+            craft_bar.y - (float)th - 2.0f,
+            pct, muted);
+    }
+
+    SDL_SetRenderDrawColor(renderer, 26, 29, 35, 255);
+    SDL_RenderFillRect(renderer, &fuel_bar);
+    SDL_SetRenderDrawColor(renderer, 40, 44, 52, 255);
+    SDL_RenderRect(renderer, &fuel_bar);
+
     if (fuel_remaining > 0.0f) {
-        SDL_FRect fuel_bar = { fuel_r.x, fuel_r.y - BAR_H - 6.0f, fuel_r.w, BAR_H };
-        SDL_SetRenderDrawColor(renderer, 30, 33, 40, 255);
-        SDL_RenderFillRect(renderer, &fuel_bar);
-        SDL_FRect fill = { fuel_bar.x, fuel_bar.y, fuel_bar.w * fuel_remaining, fuel_bar.h };
+        SDL_FRect fill = { fuel_bar.x, fuel_bar.y, fuel_bar.w * fuel_remaining, BAR_H };
         SDL_SetRenderDrawColor(renderer, 80, 180, 100, 255);
         SDL_RenderFillRect(renderer, &fill);
-        SDL_SetRenderDrawColor(renderer, 44, 48, 58, 255);
-        SDL_RenderRect(renderer, &fuel_bar);
     }
 }
