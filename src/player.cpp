@@ -78,7 +78,7 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
         }
 
         bool has_ore = false;
-        for (int dy = 0; dy < (int)obj.size.y; ++dy) {
+        for (int dy = 0; dy < (int)obj.size.y && !has_ore; ++dy) {
             for (int dx = 0; dx < (int)obj.size.x; ++dx) {
                 Tile tile = world.get_tile(obj.x + dx, obj.y + dy);
                 if (tile.type == IRON_ORE && tile.yield > 0) {
@@ -86,10 +86,24 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
                     break;
                 }
             }
-            if (has_ore) break;
         }
 
-        if (!has_ore) {
+        bool has_fuel = obj.fuel_remaining > 0.0f || obj.fuel_amount > 0;
+        if (!has_ore || !has_fuel) {
+            obj.mining_progress = 0.0f;
+            continue;
+        }
+
+        if (obj.fuel_remaining <= 0.0f) {
+            obj.fuel_remaining = 1.0f;
+            obj.fuel_amount--;
+            if (obj.fuel_amount < 0) obj.fuel_amount = 0;
+        }
+
+        obj.fuel_remaining -= delta_time * 0.2f;
+        if (obj.fuel_remaining < 0.0f) obj.fuel_remaining = 0.0f;
+
+        if (obj.fuel_remaining <= 0.0f) {
             obj.mining_progress = 0.0f;
             continue;
         }
@@ -101,8 +115,9 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
         }
 
         obj.mining_progress -= duration;
-        bool mined_any = false;
-        for (int dy = 0; dy < (int)obj.size.y; ++dy) {
+
+        bool mined = false;
+        for (int dy = 0; dy < (int)obj.size.y && !mined; ++dy) {
             for (int dx = 0; dx < (int)obj.size.x; ++dx) {
                 int tx = obj.x + dx;
                 int ty = obj.y + dy;
@@ -121,11 +136,12 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
                 }
 
                 world.set_tile(tx, ty, tile);
-                mined_any = true;
+                mined = true;
+                break;
             }
         }
 
-        if (!mined_any) {
+        if (!mined) {
             obj.mining_progress = 0.0f;
         }
     }
@@ -161,7 +177,7 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
     const int click_tile_y = (int)std::floor((cam.y + (float)e.button.y / cam.zoom) / 32.0f);
 
     if (on_object_clicked) {
-        for (const PlacedObject& obj : placed_objects) {
+        for (PlacedObject& obj : placed_objects) {
             if (click_tile_x >= obj.x && click_tile_x < obj.x + (int)obj.size.x &&
                 click_tile_y >= obj.y && click_tile_y < obj.y + (int)obj.size.y) {
                 on_object_clicked(obj);

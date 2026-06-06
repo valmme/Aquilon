@@ -19,6 +19,7 @@
 #include "inv/item.h"
 #include "audio.h"
 #include "inv/panels/furnace_panel.h"
+#include "inv/panels/drill_panel.h"
 
 const int TILE_SIZE = 32;
 
@@ -141,17 +142,27 @@ int main() {
     CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
     FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
     furnace_panel->initialize_recipes();
+    DrillPanel* drill_panel = new DrillPanel(tex, debug_font.get());
     initialize_items(tex);
     inv.set_crafting_system(crafting);
     inv.set_active_panel(crafting);
 
     player.on_object_clicked = [&](const Player::PlacedObject& obj) {
+        if (!inv.open) {
+            inv.open = true;
+            inv.open_window();
+        }
+
         if (obj.type == ItemType::FURNACE) {
-            if (!inv.open) {
-                inv.open = true;
-                inv.open_window();
-            }
+            drill_panel->set_target(nullptr);
             inv.set_active_panel(furnace_panel);
+            return;
+        }
+
+        if (obj.type == ItemType::DRILL) {
+            drill_panel->set_target(const_cast<Player::PlacedObject*>(&obj));
+            inv.set_active_panel(drill_panel);
+            return;
         }
     };
 
@@ -390,6 +401,7 @@ int main() {
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         furnace_panel->update(delta_time);
+        drill_panel->update(delta_time);
         crafting->update(delta_time, inv);
         inv.update(mouse_x, mouse_y);
 

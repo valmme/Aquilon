@@ -75,6 +75,8 @@ public:
         int y = 0;
         vec2 size = {1, 1};
         float mining_progress = 0.0f;
+        int fuel_amount = 0;
+        float fuel_remaining = 0.0f;
     };
 
     struct MiningState {
@@ -104,7 +106,6 @@ public:
     void draw_item_placement_preview(SDL_Renderer* renderer, const Camera& cam,
                                       const Inventory& inventory, World& world, float mouse_x, float mouse_y) const;
     std::function<void(const PlacedObject&)> on_object_clicked;
-    
 
     SDL_FRect player;
 
