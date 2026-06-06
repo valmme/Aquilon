@@ -57,8 +57,15 @@ bool Player::can_place_item_at(ItemType type, World& world, int x, int y, vec2 s
     }
 
     if (type == ItemType::DRILL) {
-        Tile tile = world.get_tile(x, y);
-        return tile.type == IRON_ORE;
+        for (int dy = 0; dy < (int)size.y; ++dy) {
+            for (int dx = 0; dx < (int)size.x; ++dx) {
+                Tile tile = world.get_tile(x + dx, y + dy);
+                if (tile.type != IRON_ORE || tile.yield <= 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     return true;
@@ -70,8 +77,19 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
             continue;
         }
 
-        Tile tile = world.get_tile(obj.x, obj.y);
-        if (tile.type != IRON_ORE || tile.yield <= 0) {
+        bool has_ore = false;
+        for (int dy = 0; dy < (int)obj.size.y; ++dy) {
+            for (int dx = 0; dx < (int)obj.size.x; ++dx) {
+                Tile tile = world.get_tile(obj.x + dx, obj.y + dy);
+                if (tile.type == IRON_ORE && tile.yield > 0) {
+                    has_ore = true;
+                    break;
+                }
+            }
+            if (has_ore) break;
+        }
+
+        if (!has_ore) {
             obj.mining_progress = 0.0f;
             continue;
         }
@@ -83,16 +101,33 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
         }
 
         obj.mining_progress -= duration;
-        if (Item* drop = make_drop_for_tile(tile, textures)) {
-            inventory.pick(drop);
+        bool mined_any = false;
+        for (int dy = 0; dy < (int)obj.size.y; ++dy) {
+            for (int dx = 0; dx < (int)obj.size.x; ++dx) {
+                int tx = obj.x + dx;
+                int ty = obj.y + dy;
+                Tile tile = world.get_tile(tx, ty);
+                if (tile.type != IRON_ORE || tile.yield <= 0) {
+                    continue;
+                }
+
+                if (Item* drop = make_drop_for_tile(tile, textures)) {
+                    inventory.pick(drop);
+                }
+
+                tile.yield -= 1;
+                if (tile.yield <= 0) {
+                    tile = Tile{EMPTY, false, 0};
+                }
+
+                world.set_tile(tx, ty, tile);
+                mined_any = true;
+            }
         }
 
-        tile.yield -= 1;
-        if (tile.yield <= 0) {
-            tile = Tile{EMPTY, false, 0};
+        if (!mined_any) {
+            obj.mining_progress = 0.0f;
         }
-
-        world.set_tile(obj.x, obj.y, tile);
     }
 }
 
