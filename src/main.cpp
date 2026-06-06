@@ -20,6 +20,7 @@
 #include "audio.h"
 #include "inv/panels/furnace_panel.h"
 #include "inv/panels/drill_panel.h"
+#include "version.h"
 
 const int TILE_SIZE = 32;
 
@@ -34,6 +35,11 @@ static const char* log_level_name(Logger::Level level) {
         default:                   return "unknown";
     }
 }
+
+enum class GameState {
+    Menu,
+    Playing
+};
 
 static void log_available_renderers() {
     int count = SDL_GetNumRenderDrivers();
@@ -126,12 +132,16 @@ int main() {
     Logger::Log("UI", Logger::Level::Info, "Initialized GUI engine.");
 
     std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> debug_font(
-        TTF_OpenFont("resources/fonts/arial.ttf", 14), &TTF_CloseFont
+        TTF_OpenFont("resources/fonts/arial.ttf", 20), &TTF_CloseFont
     );
     if (!debug_font) {
         Logger::Log("UI", Logger::Level::Warn,
                     "Debug overlay font not found; Game Status text will not render.");
     }
+
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> title_font(
+        TTF_OpenFont("resources/fonts/arial.ttf", 72), &TTF_CloseFont
+    );
 
 
     World world;
@@ -187,6 +197,7 @@ int main() {
     int initial_player_tile_y = (int)player.player.y / TILE_SIZE;
     world.update(initial_player_tile_x, initial_player_tile_y, config.chunk_distance);
 
+    GameState state = GameState::Menu;
     float fps = 0.0f;
     bool right_hold_blocked = false;
     bool resource_panel_visible = false;
@@ -194,8 +205,31 @@ int main() {
     int resource_panel_yield = 0;
     TileType resource_panel_type = EMPTY;
 
-    const std::string game_status_title = Localize("Game Status");
-    GUIWindow* main_window = gui_engine.CreateWindow(SDL_FRect{10, 10, 330, 220}, game_status_title);
+    GUIButton play_button({ 0, 0, 200, 45 }, Localize("Play"));
+    GUIButton settings_button({ 0, 0, 200, 45 }, Localize("Settings"));
+    GUIButton exit_button({ 0, 0, 200, 45 }, Localize("Exit"));
+
+    auto setup_menu_window = [&]() {
+        const std::string menu_title = Localize("Main Menu");
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 110, 250, 220 }, menu_title);
+        w->SetChromeVisible(false);
+        
+        w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
+            float start_y = content.y + 20.0f;
+            float center_x = content.x + (content.w - 200.0f) * 0.5f;
+
+            play_button.rect = { center_x, start_y, 200, 45 };
+            settings_button.rect = { center_x, start_y + 55, 200, 45 };
+            exit_button.rect = { center_x, start_y + 110, 200, 45 };
+
+            play_button.Draw(r, debug_font.get());
+            settings_button.Draw(r, debug_font.get());
+            exit_button.Draw(r, debug_font.get());
+        });
+        return w;
+    };
+
+    GUIWindow* main_window = setup_menu_window();
     GUIWindow* resource_panel = gui_engine.CreateInfoWindow(SDL_FRect{0, 0, 220, 110});
     GUIWindow* crafting_queue_window = gui_engine.CreateQueueWindow(SDL_FRect{10.0f, (float)win_h - 120.0f, 260.0f, 100.0f});
     crafting_queue_window->SetVisible(false);
@@ -235,24 +269,24 @@ int main() {
         const SDL_Color accent_color = {220, 196, 134, 255};
 
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
-        y += 18.0f;
+        y += 24.0f;
 
         char line[128];
         const std::string yield_label = Localize("Yield");
         snprintf(line, sizeof(line), "%s: %d", yield_label.c_str(), resource_panel_yield);
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
-        y += 18.0f;
+        y += 24.0f;
 
         const std::string type_label = Localize("Type");
         const std::string resource_name = resource_panel_type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         snprintf(line, sizeof(line), "%s: %s", type_label.c_str(), resource_name.c_str());
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
-        y += 18.0f;
+        y += 24.0f;
 
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, Localize("Hold RMB to mine"), accent_color);
     });
 
-    main_window->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+    auto status_draw_callback = [&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_Color panel_fill = {16, 17, 21, 255};
         SDL_SetRenderDrawColor(renderer, panel_fill.r, panel_fill.g, panel_fill.b, panel_fill.a);
         SDL_RenderFillRect(renderer, &content_rect);
@@ -264,7 +298,7 @@ int main() {
 
         const float left = content_rect.x + 8.0f;
         float y = content_rect.y + 8.0f;
-        const float line_step = 18.0f;
+        const float line_step = 24.0f;
         const SDL_Color label = {238, 239, 242, 255};
         const SDL_Color muted = {165, 172, 180, 255};
 
@@ -310,13 +344,25 @@ int main() {
 
         snprintf(line, sizeof(line), "%s: %s", log_level_label.c_str(), log_level_name(config.log_level));
         TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
-    });
+    };
+
+    play_button.on_click = [&]() {
+        state = GameState::Playing;
+        const std::string game_status_title = Localize("Game Status");
+        main_window = gui_engine.CreateWindow(SDL_FRect{ 10, 10, 330, 220 }, game_status_title);
+        main_window->SetContentDrawCallback(status_draw_callback);
+    };
+
+    settings_button.on_click = []() {
+        Logger::Log("UI", Logger::Level::Info, "Settings menu opened (Not implemented)");
+    };
+
+    bool running = true;
+    exit_button.on_click = [&]() { running = false; };
 
     Uint64 last_counter = SDL_GetPerformanceCounter();
     Uint64 frequency = SDL_GetPerformanceFrequency();
     float delta_time = 0.0f;
-
-    bool running = true;
     SDL_Event e;
     Logger::Log("APPLICATION", Logger::Level::Info, "Entering main loop.");
 
@@ -339,6 +385,24 @@ int main() {
 
             bool gui_consumed = gui_engine.HandleEvent(e);
             main_window = gui_engine.GetWindow();
+
+            if (state == GameState::Menu && !gui_consumed) {
+                float mx, my;
+                SDL_GetMouseState(&mx, &my);
+                if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) {
+                    play_button.HandleMouseDown(mx, my);
+                    settings_button.HandleMouseDown(mx, my);
+                    exit_button.HandleMouseDown(mx, my);
+                } else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT) {
+                    play_button.HandleMouseUp(mx, my);
+                    settings_button.HandleMouseUp(mx, my);
+                    exit_button.HandleMouseUp(mx, my);
+                } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
+                    play_button.HandleMouseMove(mx, my);
+                    settings_button.HandleMouseMove(mx, my);
+                    exit_button.HandleMouseMove(mx, my);
+                }
+            }
 
             if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT && gui_consumed) {
                 player.stop_mining();
@@ -373,29 +437,36 @@ int main() {
             }
 
             if (!gui_consumed) {
-                player.handle_input(e);
+                if (state == GameState::Playing) {
+                    player.handle_input(e);
+                }
             }
 
             inv.handle_event(e);
-            player.handle_item_placement(e, cam, inv, world, !gui_consumed);
+            if (state == GameState::Playing) {
+                player.handle_item_placement(e, cam, inv, world, !gui_consumed);
+            }
         }
 
-        player.update(delta_time);
+        if (state == GameState::Playing) {
+            player.update(delta_time);
 
-        int player_tile_x = (int)player.player.x / TILE_SIZE;
-        int player_tile_y = (int)player.player.y / TILE_SIZE;
+            int player_tile_x = (int)player.player.x / TILE_SIZE;
+            int player_tile_y = (int)player.player.y / TILE_SIZE;
 
-        std::size_t chunk_count_before = world.get_chunks().size();
-        world.update(player_tile_x, player_tile_y, config.chunk_distance);
-        player.update_placed_drills(delta_time, world, inv, tex);
-        std::size_t chunk_count_after = world.get_chunks().size();
-        if (chunk_count_after != chunk_count_before) {
-            Logger::Log("SYSTEM", Logger::Level::Debug,
-                        "Chunk cache changed: %zu -> %zu around chunk (%d, %d).",
-                        chunk_count_before, chunk_count_after,
-                        player_tile_x / CHUNK_SIZE, player_tile_y / CHUNK_SIZE);
+            std::size_t chunk_count_before = world.get_chunks().size();
+            world.update(player_tile_x, player_tile_y, config.chunk_distance);
+            player.update_placed_drills(delta_time, world, inv, tex);
+            std::size_t chunk_count_after = world.get_chunks().size();
+            if (chunk_count_after != chunk_count_before) {
+                Logger::Log("SYSTEM", Logger::Level::Debug,
+                            "Chunk cache changed: %zu -> %zu around chunk (%d, %d).",
+                            chunk_count_before, chunk_count_after,
+                            player_tile_x / CHUNK_SIZE, player_tile_y / CHUNK_SIZE);
+            }
+            cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
+            player.update_mining(delta_time, world, inv, tex);
         }
-        cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
 
         float mouse_x = 0.0f, mouse_y = 0.0f;
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -428,7 +499,7 @@ int main() {
         resource_panel_type = hovered_tile_data.type;
         resource_panel->size.x = (float)win_w - resource_panel->size.w - 16.0f;
         resource_panel->size.y = 16.0f;
-        resource_panel->SetVisible(resource_panel_visible);
+        resource_panel->SetVisible(state == GameState::Playing && resource_panel_visible);
 
         if (!(mouse_buttons & SDL_BUTTON_RMASK)) {
             player.stop_mining();
@@ -439,71 +510,92 @@ int main() {
             }
         }
 
-        player.update_mining(delta_time, world, inv, tex);
-
-        SDL_SetRenderDrawColor(renderer, 230, 245, 255, 255);
+        if (state == GameState::Playing) {
+            SDL_SetRenderDrawColor(renderer, 230, 245, 255, 255);
+        } else {
+            SDL_SetRenderDrawColor(renderer, 24, 26, 31, 255);
+        }
         SDL_RenderClear(renderer);
 
-        for (auto& [key, chunk] : world.get_chunks()) {
-            const int chunk_tile_x0 = (int)chunk.pos.x * CHUNK_SIZE;
-            const int chunk_tile_y0 = (int)chunk.pos.y * CHUNK_SIZE;
-            const int chunk_tile_x1 = chunk_tile_x0 + CHUNK_SIZE - 1;
-            const int chunk_tile_y1 = chunk_tile_y0 + CHUNK_SIZE - 1;
+        if (state == GameState::Playing) {
+            for (auto& [key, chunk] : world.get_chunks()) {
+                const int chunk_tile_x0 = (int)chunk.pos.x * CHUNK_SIZE;
+                const int chunk_tile_y0 = (int)chunk.pos.y * CHUNK_SIZE;
+                const int chunk_tile_x1 = chunk_tile_x0 + CHUNK_SIZE - 1;
+                const int chunk_tile_y1 = chunk_tile_y0 + CHUNK_SIZE - 1;
 
-            if (chunk_tile_x1 < visible_min_tile_x || chunk_tile_x0 > visible_max_tile_x ||
-                chunk_tile_y1 < visible_min_tile_y || chunk_tile_y0 > visible_max_tile_y) {
-                continue;
-            }
-
-            const int local_min_x = std::max(0, visible_min_tile_x - chunk_tile_x0);
-            const int local_min_y = std::max(0, visible_min_tile_y - chunk_tile_y0);
-            const int local_max_x = std::min(CHUNK_SIZE - 1, visible_max_tile_x - chunk_tile_x0);
-            const int local_max_y = std::min(CHUNK_SIZE - 1, visible_max_tile_y - chunk_tile_y0);
-
-            for (int ty = 0; ty < CHUNK_SIZE; ty++) {
-                if (ty < local_min_y || ty > local_max_y) {
+                if (chunk_tile_x1 < visible_min_tile_x || chunk_tile_x0 > visible_max_tile_x ||
+                    chunk_tile_y1 < visible_min_tile_y || chunk_tile_y0 > visible_max_tile_y) {
                     continue;
                 }
 
-                for (int tx = 0; tx < CHUNK_SIZE; tx++) {
-                    if (tx < local_min_x || tx > local_max_x) {
+                const int local_min_x = std::max(0, visible_min_tile_x - chunk_tile_x0);
+                const int local_min_y = std::max(0, visible_min_tile_y - chunk_tile_y0);
+                const int local_max_x = std::min(CHUNK_SIZE - 1, visible_max_tile_x - chunk_tile_x0);
+                const int local_max_y = std::min(CHUNK_SIZE - 1, visible_max_tile_y - chunk_tile_y0);
+
+                for (int ty = 0; ty < CHUNK_SIZE; ty++) {
+                    if (ty < local_min_y || ty > local_max_y) {
                         continue;
                     }
 
-                    int world_x = chunk_tile_x0 + tx;
-                    int world_y = chunk_tile_y0 + ty;
+                    for (int tx = 0; tx < CHUNK_SIZE; tx++) {
+                        if (tx < local_min_x || tx > local_max_x) {
+                            continue;
+                        }
 
-                    Tile t = chunk.tiles[tx][ty];
+                        int world_x = chunk_tile_x0 + tx;
+                        int world_y = chunk_tile_y0 + ty;
 
-                    SDL_Texture* current = nullptr;
-                    if (t.type == ICE) current = tex.ice;
-                    else if (t.type == SNOW) current = tex.snow;
-                    else if (t.type == STONE) current = tex.stone;
-                    else if (t.type == IRON_ORE) current = tex.iron_ore;
-                    else if (t.type == COAL) current = tex.coal;
+                        Tile t = chunk.tiles[tx][ty];
 
-                    if (!current) continue;
+                        SDL_Texture* current = nullptr;
+                        if (t.type == ICE) current = tex.ice;
+                        else if (t.type == SNOW) current = tex.snow;
+                        else if (t.type == STONE) current = tex.stone;
+                        else if (t.type == IRON_ORE) current = tex.iron_ore;
+                        else if (t.type == COAL) current = tex.coal;
 
-                    bool is_ice = t.type == ICE;
+                        if (!current) continue;
 
-                    SDL_FRect dst = cam.world_to_screen_rect(
-                        world_x * TILE_SIZE,
-                        world_y * TILE_SIZE,
-                        (float)TILE_SIZE * (!is_ice ? 1 : 1.3),
-                        (float)TILE_SIZE * (!is_ice ? 1 : 1.3)
-                    );
+                        bool is_ice = t.type == ICE;
 
-                    float angle = (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
-                    SDL_RenderTextureRotated(renderer, current, nullptr, &dst, angle, nullptr, SDL_FLIP_NONE);
+                        SDL_FRect dst = cam.world_to_screen_rect(
+                            world_x * TILE_SIZE,
+                            world_y * TILE_SIZE,
+                            (float)TILE_SIZE * (!is_ice ? 1 : 1.3),
+                            (float)TILE_SIZE * (!is_ice ? 1 : 1.3)
+                        );
+
+                        float angle = (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
+                        SDL_RenderTextureRotated(renderer, current, nullptr, &dst, angle, nullptr, SDL_FLIP_NONE);
+                    }
                 }
             }
+
+            player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
+            player.render(renderer, cam);
+            player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
         }
 
-        player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
+        if (state == GameState::Menu) {
+            const std::string game_title = "Aquilon";
+            int title_w, title_h;
+            TTF_Font* draw_font = title_font ? title_font.get() : debug_font.get();
+            TTF_GetStringSize(draw_font, game_title.c_str(), 0, &title_w, &title_h);
+            float title_x = (win_w - title_w) / 2.0f;
+            float title_y = 50.0f;
+            TextRenderer::DrawText(renderer, draw_font, title_x, title_y, game_title, {255, 255, 255, 255});
 
-        player.render(renderer, cam);
+            char version_text[64];
+            snprintf(version_text, sizeof(version_text), "v%s build %s", GAME_VERSION, BUILD_NUMBER);
+            int version_w, version_h;
+            TTF_GetStringSize(debug_font.get(), version_text, 0, &version_w, &version_h);
+            float version_x = 10.0f;
+            float version_y = win_h - version_h - 10.0f;
+            TextRenderer::DrawText(renderer, debug_font.get(), version_x, version_y, version_text, {150, 150, 150, 255});
+        }
 
-        player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
 
         if (crafting_queue_window) {
             crafting_queue_window->size.x = 10.0f;
@@ -512,9 +604,12 @@ int main() {
         }
 
         gui_engine.RenderAll();
-        inv.draw(renderer, debug_font.get());
 
-        player.draw_mining_progress_bar(renderer, win_w, win_h);
+        if (state == GameState::Playing) {
+            inv.draw(renderer, debug_font.get());
+            player.draw_mining_progress_bar(renderer, win_w, win_h);
+        }
+
         SDL_RenderPresent(renderer);
     }
 

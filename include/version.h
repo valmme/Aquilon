@@ -1,6 +1,7 @@
 #ifndef AQUILON_VERSION_H
 #define AQUILON_VERSION_H
 
-#define AQUILON_VERSION "0.1.0"
+#define GAME_VERSION "0.1.0"
+#define BUILD_NUMBER "alpha.1"
 
 #endif // AQUILON_VERSION_H

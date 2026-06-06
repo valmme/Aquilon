@@ -66,7 +66,8 @@ void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
     if (font) {
         SDL_Color text_color = GetTextColor();
         float text_x = rect.x + 16.0f;
-        float text_y = rect.y + (rect.h - 20.0f) * 0.5f;
+        float font_h = (float)TTF_GetFontHeight(font);
+        float text_y = rect.y + (rect.h - font_h) * 0.5f;
         
         TextRenderer::DrawText(renderer, font, text_x, text_y, label, text_color);
     }
