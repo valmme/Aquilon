@@ -468,14 +468,16 @@ int main() {
 
                     if (!current) continue;
 
+                    bool is_ice = t.type == ICE;
+
                     SDL_FRect dst = cam.world_to_screen_rect(
                         world_x * TILE_SIZE,
                         world_y * TILE_SIZE,
-                        (float)TILE_SIZE,
-                        (float)TILE_SIZE
+                        (float)TILE_SIZE * (!is_ice ? 1 : 1.3),
+                        (float)TILE_SIZE * (!is_ice ? 1 : 1.3)
                     );
 
-                    float angle = t.type == ICE ? 0 : (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
+                    float angle = (float)(((world_x * 928371 + world_y * 12347) % 360 + 360) % 360);
                     SDL_RenderTextureRotated(renderer, current, nullptr, &dst, angle, nullptr, SDL_FLIP_NONE);
                 }
             }

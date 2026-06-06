@@ -17,21 +17,7 @@ static int get_inventory_amount(const Inventory& inv, ItemType type) {
 }
 
 bool CraftingQueue::enqueue(const Recipe& recipe, Inventory& inv, const std::vector<Recipe>& known_recipes) {
-    std::unordered_map<ItemType, int> available;
-    available.clear();
-
-    available[ItemType::STONE] = inv.get_amount(ItemType::STONE);
-    available[ItemType::IRON_ORE] = inv.get_amount(ItemType::IRON_ORE);
-    available[ItemType::IRON_PLATE] = inv.get_amount(ItemType::IRON_PLATE);
-    available[ItemType::COPPER_ORE] = inv.get_amount(ItemType::COPPER_ORE);
-    available[ItemType::COAL] = inv.get_amount(ItemType::COAL);
-    available[ItemType::FURNACE] = inv.get_amount(ItemType::FURNACE);
-    available[ItemType::DRILL] = inv.get_amount(ItemType::DRILL);
-
-    for (const QueuedCraft& entry : items) {
-        if (!entry.recipe) continue;
-        available[entry.recipe->result_type] += entry.recipe->result_amount * entry.count;
-    }
+    std::unordered_map<ItemType, int> available = compute_available(inv);
 
     std::vector<QueuedCraft> plan;
     std::vector<ItemType> stack;
@@ -143,6 +129,29 @@ void CraftingQueue::update(float dt, Inventory& inv) {
     inv.pick(crafted);
 
     items.erase(items.begin());
+}
+
+std::unordered_map<ItemType, int> CraftingQueue::compute_available(const Inventory& inv) const {
+    std::unordered_map<ItemType, int> available;
+
+    available[ItemType::STONE]      = inv.get_amount(ItemType::STONE);
+    available[ItemType::IRON_ORE]   = inv.get_amount(ItemType::IRON_ORE);
+    available[ItemType::IRON_PLATE] = inv.get_amount(ItemType::IRON_PLATE);
+    available[ItemType::COPPER_ORE] = inv.get_amount(ItemType::COPPER_ORE);
+    available[ItemType::COAL]       = inv.get_amount(ItemType::COAL);
+    available[ItemType::FURNACE]    = inv.get_amount(ItemType::FURNACE);
+    available[ItemType::DRILL]      = inv.get_amount(ItemType::DRILL);
+
+    for (const QueuedCraft& entry : items) {
+        if (!entry.recipe) continue;
+        for (const RecipeIngredient& ing : entry.recipe->ingredients) {
+            available[ing.type] -= ing.amount;
+        }
+
+        available[entry.recipe->result_type] += entry.recipe->result_amount;
+    }
+
+    return available;
 }
 
 void CraftingQueue::draw(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect& screen_rect) const {

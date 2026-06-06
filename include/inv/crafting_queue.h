@@ -25,6 +25,8 @@ public:
     void update(float dt, Inventory& inv);
     void draw(SDL_Renderer* renderer, TTF_Font* font, const SDL_FRect& screen_rect) const;
 
+    std::unordered_map<ItemType, int> compute_available(const Inventory& inv) const;
+
     int size() const { return (int)items.size(); }
     bool empty() const { return items.empty(); }
 

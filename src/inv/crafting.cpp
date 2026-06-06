@@ -13,11 +13,13 @@ static constexpr float SLOT_H     = 42.0f;
 static constexpr float SLOT_GAP   = 4.0f;
 static constexpr int   GRID_COLS  = 4;
 
-static int craft_count(const Inventory& inv, const Recipe& r) {
+static int craft_count(const Inventory& inv, const Recipe& r, const std::unordered_map<ItemType, int>& available) {
     int count = INT_MAX;
     
-    for (const auto& ing : r.ingredients) {
-        int have = inv.get_amount(ing.type);
+    for (const RecipeIngredient& ing : r.ingredients) {
+        int have = available.count(ing.type) ? available.at(ing.type) : 0;
+
+        have = std::max(0, have);
         count = std::min(count, have / ing.amount);
     }
 
@@ -127,7 +129,12 @@ void CraftingSystem::select_by_mouse(float mx, float my, const SDL_FRect& panel_
 }
 
 void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_FRect& panel_rect) {
-    if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
+    int count = 1;
+
+    if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) count = 1;
+    else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT) count = 5;
+    else return;
+
     float mx = (float)e.button.x;
     float my = (float)e.button.y;
 
@@ -135,7 +142,12 @@ void CraftingSystem::handle_event(const SDL_Event& e, Inventory& inv, const SDL_
         SDL_FRect r = slot_rect(panel_rect, i);
         if (mx >= r.x && mx < r.x + r.w && my >= r.y && my < r.y + r.h) {
             selected = i;
-            craft_selected(inv);
+
+            std::unordered_map<ItemType, int> available = queue.compute_available(inv);
+            int max_craftable = craft_count(inv, recipes[selected], available);
+            count = std::min(count, max_craftable);
+
+            for (int j = 0; j < count; j++) craft_selected(inv);
             return;
         }
     }
@@ -162,7 +174,8 @@ void CraftingSystem::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_r
     for (int i = 0; i < (int)recipes.size(); ++i) {
         const Recipe& r = recipes[i];
         SDL_FRect slot = slot_rect(panel_rect, i);
-        int cnt = craft_count(inv, r);
+        std::unordered_map<ItemType, int> available = queue.compute_available(inv);
+        int cnt = craft_count(inv, r, available);
         bool can = (cnt > 0);
         bool sel = (i == selected);
         bool hov = (i == hovered);
