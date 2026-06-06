@@ -141,12 +141,21 @@ void FurnacePanel::handle_event(const SDL_Event& e, Inventory& inv, const SDL_FR
         return;
     }
 
+    if (clicked == 0 && cursor && !find_recipe(cursor->type)) {
+        inv.set_cursor_item(cursor);
+        return;
+    }
+
     if (cursor && *slot_ptr == nullptr) {
         *slot_ptr = cursor;
         return;
     }
 
     if (cursor && *slot_ptr) {
+        if (clicked == 0 && !find_recipe(cursor->type)) {
+            inv.set_cursor_item(cursor);
+            return;
+        }
         inv.set_cursor_item(*slot_ptr);
         *slot_ptr = cursor;
         return;
@@ -351,8 +360,23 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
             char buf[16];
             snprintf(buf, sizeof(buf), "%d", item->amount);
             float fh = (float)TTF_GetFontHeight(font);
-            TextRenderer::DrawText(renderer, font,
-                r.x + r.w - 16.0f, r.y + r.h - fh - 3.0f, buf, amber);
+            float tw = 0;
+            int tw_int = 0, th_int = 0;
+
+            TTF_GetStringSize(font, buf, 0, &tw_int, &th_int);
+            float bg_w = (float)tw_int + 4.0f;
+            float bg_h = fh + 2.0f;
+            SDL_FRect bg = {
+                r.x + r.w - bg_w - 2.0f,
+                r.y + r.h - bg_h - 2.0f,
+                bg_w, bg_h
+            };
+
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 8, 9, 11, 210);
+            SDL_RenderFillRect(renderer, &bg);
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+            TextRenderer::DrawText(renderer, font, bg.x + 2.0f, bg.y + 1.0f, buf, {235, 237, 241, 255});
         }
     };
 
