@@ -74,6 +74,7 @@ public:
         int x = 0;
         int y = 0;
         vec2 size = {1, 1};
+        float mining_progress = 0.0f;
     };
 
     struct MiningState {
@@ -88,8 +89,9 @@ public:
     explicit Player(const InputConfig& input = InputConfig{});
 
     void handle_input(const SDL_Event& e);
-    void handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, bool allow_world_interaction);
+    void handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction);
     void update(float delta_time);
+    void update_placed_drills(float delta_time, World& world, Inventory& inventory, const Textures& textures);
     void render(SDL_Renderer* renderer, const Camera& cam);
     bool is_mining() const;
     void start_mining(int tile_x, int tile_y, TileType tile_type);
@@ -100,7 +102,7 @@ public:
                                int visible_min_tile_x, int visible_min_tile_y,
                                int visible_max_tile_x, int visible_max_tile_y) const;
     void draw_item_placement_preview(SDL_Renderer* renderer, const Camera& cam,
-                                      const Inventory& inventory, float mouse_x, float mouse_y) const;
+                                      const Inventory& inventory, World& world, float mouse_x, float mouse_y) const;
     std::function<void(const PlacedObject&)> on_object_clicked;
     
 
@@ -121,6 +123,7 @@ private:
     void update_animation(float delta_time);
     static float mining_duration_for(TileType type);
     static bool is_mineable(TileType type);
+    static bool can_place_item_at(ItemType type, World& world, int x, int y, vec2 size, const std::vector<PlacedObject>& placed_objects);
     static Item* make_drop_for_tile(const Tile& tile, const Textures& textures);
     static bool can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size);
     static void draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam,

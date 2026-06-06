@@ -154,6 +154,7 @@ int main() {
     inv.pick(item_stack(Item::FURNACE, 67));
     inv.pick(item_stack(Item::IRON_PLATE, 31));
     inv.pick(item_stack(Item::COAL, 32));
+    inv.pick(item_stack(Item::DRILL, 10));
 
     crafting->initialize_recipes(&tex);
 
@@ -361,7 +362,7 @@ int main() {
             }
 
             inv.handle_event(e);
-            player.handle_item_placement(e, cam, inv, !gui_consumed);
+            player.handle_item_placement(e, cam, inv, world, !gui_consumed);
         }
 
         player.update(delta_time);
@@ -371,6 +372,7 @@ int main() {
 
         std::size_t chunk_count_before = world.get_chunks().size();
         world.update(player_tile_x, player_tile_y, config.chunk_distance);
+        player.update_placed_drills(delta_time, world, inv, tex);
         std::size_t chunk_count_after = world.get_chunks().size();
         if (chunk_count_after != chunk_count_before) {
             Logger::Log("SYSTEM", Logger::Level::Debug,
@@ -483,7 +485,7 @@ int main() {
 
         player.render(renderer, cam);
 
-        player.draw_item_placement_preview(renderer, cam, inv, mouse_x, mouse_y);
+        player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
 
         if (crafting_queue_window) {
             crafting_queue_window->size.x = 10.0f;

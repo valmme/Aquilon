@@ -80,8 +80,11 @@ void FreeTextures(Textures& t) {
     if (t.stone) SDL_DestroyTexture(t.stone);
     if (t.iron_ore) SDL_DestroyTexture(t.iron_ore);
     if (t.iron_plate) SDL_DestroyTexture(t.iron_plate);
+    if (t.coal) SDL_DestroyTexture(t.coal);
     if (t.furnace) SDL_DestroyTexture(t.furnace);
+    if (t.drill) SDL_DestroyTexture(t.drill);
     if (t.slot) SDL_DestroyTexture(t.slot);
+    if (t.crafting_slot) SDL_DestroyTexture(t.crafting_slot);
     if (t.none) SDL_DestroyTexture(t.none);
 
     t = {};

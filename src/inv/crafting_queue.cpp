@@ -123,12 +123,23 @@ void CraftingQueue::update(float dt, Inventory& inv) {
 
     consume_ingredients(*current.recipe, inv);
 
+    bool can_place = false;
+    vec2 size = {1, 1};
+    
+    if (current.recipe->result_type == ItemType::FURNACE) {
+        can_place = true;
+        size = {2, 2};
+    } else if (current.recipe->result_type == ItemType::DRILL) {
+        can_place = true;
+        size = {3, 3};
+    }
+
     Item* crafted = new Item(current.recipe->result_type,
                              current.recipe->name,
                              current.recipe->result_amount,
                              current.recipe->result_texture,
-                             false,
-                             {1, 1});
+                             can_place,
+                             size);
     inv.pick(crafted);
 
     items.erase(items.begin());

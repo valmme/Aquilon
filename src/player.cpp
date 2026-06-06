@@ -51,6 +51,51 @@ bool Player::can_place_at(const std::vector<PlacedObject>& placed_objects, int x
     return true;
 }
 
+bool Player::can_place_item_at(ItemType type, World& world, int x, int y, vec2 size, const std::vector<PlacedObject>& placed_objects) {
+    if (!can_place_at(placed_objects, x, y, size)) {
+        return false;
+    }
+
+    if (type == ItemType::DRILL) {
+        Tile tile = world.get_tile(x, y);
+        return tile.type == IRON_ORE;
+    }
+
+    return true;
+}
+
+void Player::update_placed_drills(float delta_time, World& world, Inventory& inventory, const Textures& textures) {
+    for (PlacedObject& obj : placed_objects) {
+        if (obj.type != ItemType::DRILL) {
+            continue;
+        }
+
+        Tile tile = world.get_tile(obj.x, obj.y);
+        if (tile.type != IRON_ORE || tile.yield <= 0) {
+            obj.mining_progress = 0.0f;
+            continue;
+        }
+
+        obj.mining_progress += delta_time;
+        float duration = mining_duration_for(IRON_ORE);
+        if (obj.mining_progress < duration) {
+            continue;
+        }
+
+        obj.mining_progress -= duration;
+        if (Item* drop = make_drop_for_tile(tile, textures)) {
+            inventory.pick(drop);
+        }
+
+        tile.yield -= 1;
+        if (tile.yield <= 0) {
+            tile = Tile{EMPTY, false, 0};
+        }
+
+        world.set_tile(obj.x, obj.y, tile);
+    }
+}
+
 void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) {
     if (!renderer || !item || !item->can_place || !item->texture) return;
 
@@ -73,7 +118,7 @@ void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera
     SDL_SetTextureColorMod(item->texture, 255, 255, 255);
 }
 
-void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, bool allow_world_interaction) {
+void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction) {
     if (!allow_world_interaction || inventory.open) return;
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
 
@@ -95,7 +140,7 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
         return;
     }
 
-    if (!can_place_at(placed_objects, click_tile_x, click_tile_y, dragged->size)) {
+    if (!can_place_item_at(dragged->type, world, click_tile_x, click_tile_y, dragged->size, placed_objects)) {
         return;
     }
 
@@ -146,7 +191,7 @@ void Player::render_placed_objects(SDL_Renderer* renderer, const Camera& cam,
 }
 
 void Player::draw_item_placement_preview(SDL_Renderer* renderer, const Camera& cam,
-                                         const Inventory& inventory, float mouse_x, float mouse_y) const {
+                                         const Inventory& inventory, World& world, float mouse_x, float mouse_y) const {
     const Item* dragged = inventory.cursor_item;
     if (!dragged || !dragged->can_place) {
         return;
@@ -155,7 +200,7 @@ void Player::draw_item_placement_preview(SDL_Renderer* renderer, const Camera& c
     int place_tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / 32.0f);
     int place_tile_y = (int)std::floor((cam.y + mouse_y / cam.zoom) / 32.0f);
 
-    bool can_place_here = can_place_at(placed_objects, place_tile_x, place_tile_y, dragged->size);
+    bool can_place_here = can_place_item_at(dragged->type, world, place_tile_x, place_tile_y, dragged->size, placed_objects);
     draw_placement_preview_texture(renderer, cam, dragged, mouse_x, mouse_y, can_place_here);
 }
 
