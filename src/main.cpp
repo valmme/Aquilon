@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstdio>
 #include <memory>
+#include <ctime>
 #include <string>
 #include "player.h"
 #include "textures.h"
@@ -197,9 +198,14 @@ int main() {
     int initial_player_tile_y = (int)player.player.y / TILE_SIZE;
     world.update(initial_player_tile_x, initial_player_tile_y, config.chunk_distance);
 
+    std::srand((unsigned int)std::time(nullptr));
     GameState state = GameState::Menu;
     float fps = 0.0f;
     bool right_hold_blocked = false;
+    float menu_cam_timer = 0.0f;
+    float menu_origin_x = (float)(std::rand() % 100000 - 50000);
+    float menu_origin_y = (float)(std::rand() % 100000 - 50000);
+
     bool resource_panel_visible = false;
     std::string resource_panel_name;
     int resource_panel_yield = 0;
@@ -466,6 +472,13 @@ int main() {
             }
             cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
             player.update_mining(delta_time, world, inv, tex);
+        } else if (state == GameState::Menu) {
+            menu_cam_timer += delta_time;
+            cam.x = menu_origin_x + std::sin(menu_cam_timer * 0.4f) * 250.0f;
+            cam.y = menu_origin_y + std::cos(menu_cam_timer * 0.3f) * 250.0f;
+            cam.zoom = 1.0f;
+            
+            world.update((int)cam.x / TILE_SIZE, (int)cam.y / TILE_SIZE, config.chunk_distance);
         }
 
         float mouse_x = 0.0f, mouse_y = 0.0f;
@@ -510,14 +523,14 @@ int main() {
             }
         }
 
-        if (state == GameState::Playing) {
+        if (state == GameState::Playing || state == GameState::Menu) {
             SDL_SetRenderDrawColor(renderer, 230, 245, 255, 255);
         } else {
             SDL_SetRenderDrawColor(renderer, 24, 26, 31, 255);
         }
         SDL_RenderClear(renderer);
 
-        if (state == GameState::Playing) {
+        if (state == GameState::Playing || state == GameState::Menu) {
             for (auto& [key, chunk] : world.get_chunks()) {
                 const int chunk_tile_x0 = (int)chunk.pos.x * CHUNK_SIZE;
                 const int chunk_tile_y0 = (int)chunk.pos.y * CHUNK_SIZE;
@@ -572,7 +585,9 @@ int main() {
                     }
                 }
             }
+        }
 
+        if (state == GameState::Playing) {
             player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
             player.render(renderer, cam);
             player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
