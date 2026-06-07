@@ -680,25 +680,6 @@ int main() {
         furnace_panel->update(delta_time);
         drill_panel->update(delta_time);
         crafting->update(delta_time, inv);
-
-        if (state == GameState::Menu) {
-            play_button.Update(delta_time);
-            settings_button.Update(delta_time);
-            exit_button.Update(delta_time);
-
-            if (in_settings) {
-                graphics_cat_btn.Update(delta_time);
-                audio_cat_btn.Update(delta_time);
-                controls_cat_btn.Update(delta_time);
-                back_to_menu_btn.Update(delta_time);
-
-                vsync_btn.Update(delta_time);
-                music_btn.Update(delta_time);
-                sfx_btn.Update(delta_time);
-                back_to_cats_btn.Update(delta_time);
-            }
-        }
-
         inv.update(mouse_x, mouse_y);
 
         const float view_left_world = cam.x;

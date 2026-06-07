@@ -14,12 +14,12 @@ public:
     bool hovered;
     bool pressed;
     float font_scale;
+    Uint64 last_ticks;
     std::function<void()> on_click;
     
     GUIButton(SDL_FRect rect, const std::string& label);
     
     bool IsMouseOver(float mouse_x, float mouse_y) const;
-    void Update(float delta_time);
     void HandleMouseDown(float mouse_x, float mouse_y);
     void HandleMouseUp(float mouse_x, float mouse_y);
     void HandleMouseMove(float mouse_x, float mouse_y);

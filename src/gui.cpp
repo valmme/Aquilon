@@ -4,17 +4,11 @@
 #include <cmath>
 
 GUIButton::GUIButton(SDL_FRect rect, const std::string& label)
-    : rect(rect), label(label), hovered(false), pressed(false), font_scale(1.0f) {}
+    : rect(rect), label(label), hovered(false), pressed(false), font_scale(1.0f), last_ticks(0) {}
 
 bool GUIButton::IsMouseOver(float mouse_x, float mouse_y) const {
     return mouse_x >= rect.x && mouse_x <= rect.x + rect.w &&
            mouse_y >= rect.y && mouse_y <= rect.y + rect.h;
-}
-
-void GUIButton::Update(float delta_time) {
-    float target = hovered ? 1.2f : 1.0f;
-    float speed = 10.0f;
-    font_scale += (target - font_scale) * speed * delta_time;
 }
 
 void GUIButton::HandleMouseDown(float mouse_x, float mouse_y) {
@@ -52,6 +46,16 @@ SDL_Color GUIButton::GetTextColor() const {
 }
 
 void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
+    Uint64 current_ticks = SDL_GetTicks();
+    if (last_ticks == 0) last_ticks = current_ticks;
+    float dt = (float)(current_ticks - last_ticks) / 1000.0f;
+    last_ticks = current_ticks;
+
+    if (dt > 0.1f) dt = 0.1f; 
+
+    float target = hovered ? 1.2f : 1.0f;
+    font_scale += (target - font_scale) * 10.0f * dt;
+
     SDL_Color bg_color = GetBackgroundColor();
     SDL_Color border_color = hovered
     ? SDL_Color{60, 65, 75, 255}
