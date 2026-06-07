@@ -134,12 +134,15 @@ int main() {
     GUIEngine gui_engine(renderer);
     Logger::Log("UI", Logger::Level::Info, "Initialized GUI engine.");
 
-    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> debug_font(
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> menu_font(
         TTF_OpenFont("resources/fonts/arial.ttf", 20), &TTF_CloseFont
     );
-    if (!debug_font) {
-        Logger::Log("UI", Logger::Level::Warn,
-                    "Debug overlay font not found; Game Status text will not render.");
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> game_font(
+        TTF_OpenFont("resources/fonts/arial.ttf", 14), &TTF_CloseFont
+    );
+
+    if (!menu_font || !game_font) {
+        Logger::Log("UI", Logger::Level::Warn, "Fonts not found; UI text will not render properly.");
     }
 
     std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> title_font(
@@ -151,11 +154,11 @@ int main() {
     Player player(config.input);
     Camera cam;
 
-    Inventory inv(gui_engine, tex, debug_font.get(), config.input);
-    CraftingSystem* crafting = new CraftingSystem(tex, debug_font.get());
-    FurnacePanel* furnace_panel = new FurnacePanel(tex, debug_font.get());
+    Inventory inv(gui_engine, tex, game_font.get(), config.input);
+    CraftingSystem* crafting = new CraftingSystem(tex, game_font.get());
+    FurnacePanel* furnace_panel = new FurnacePanel(tex, game_font.get());
     furnace_panel->initialize_recipes();
-    DrillPanel* drill_panel = new DrillPanel(tex, debug_font.get());
+    DrillPanel* drill_panel = new DrillPanel(tex, game_font.get());
     initialize_items(tex);
     inv.set_crafting_system(crafting);
     inv.set_active_panel(crafting);
@@ -217,6 +220,7 @@ int main() {
     GUIButton settings_button({ 0, 0, 200, 45 }, Localize("Settings"));
     GUIButton exit_button({ 0, 0, 200, 45 }, Localize("Exit"));
 
+    GUIWindow* main_window = nullptr;
     auto setup_menu_window = [&]() {
         const std::string menu_title = Localize("Main Menu");
         GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 110, 250, 220 }, menu_title);
@@ -230,21 +234,157 @@ int main() {
             settings_button.rect = { center_x, start_y + 55, 200, 45 };
             exit_button.rect = { center_x, start_y + 110, 200, 45 };
 
-            play_button.Draw(r, debug_font.get());
-            settings_button.Draw(r, debug_font.get());
-            exit_button.Draw(r, debug_font.get());
+            play_button.Draw(r, menu_font.get());
+            settings_button.Draw(r, menu_font.get());
+            exit_button.Draw(r, menu_font.get());
         });
         return w;
     };
 
-    GUIWindow* main_window = setup_menu_window();
+    bool in_settings = false;
+    enum class SettingsState { Categories, Graphics, Audio, Controls };
+    SettingsState settings_state = SettingsState::Categories;
+
+    int music_vol_idx = 10;
+    int sfx_vol_idx = 10;
+
+    GUIButton graphics_cat_btn({ 0, 0, 200, 45 }, Localize("Graphics"));
+    GUIButton audio_cat_btn({ 0, 0, 200, 45 }, Localize("Audio"));
+    GUIButton controls_cat_btn({ 0, 0, 200, 45 }, Localize("Controls"));
+    GUIButton back_to_menu_btn({ 0, 0, 200, 45 }, Localize("Back"));
+
+    GUIButton vsync_btn({ 0, 0, 200, 45 }, "");
+    GUIButton music_btn({ 0, 0, 200, 45 }, "");
+    GUIButton sfx_btn({ 0, 0, 200, 45 }, "");
+    GUIButton back_to_cats_btn({ 0, 0, 200, 45 }, Localize("Back"));
+
+    auto update_settings_labels = [&]() {
+        vsync_btn.label = std::string(Localize("VSync")) + ": " + (config.vsync_enabled ? "ON" : "OFF");
+        music_btn.label = std::string(Localize("Music")) + ": " + std::to_string(music_vol_idx * 10) + "%";
+        sfx_btn.label = std::string(Localize("SFX")) + ": " + std::to_string(sfx_vol_idx * 10) + "%";
+    };
+
+    std::function<GUIWindow*()> setup_settings_categories_window;
+
+    vsync_btn.on_click = [&]() {
+        config.vsync_enabled = !config.vsync_enabled;
+        SDL_SetRenderVSync(renderer, config.vsync_enabled ? 1 : 0);
+        update_settings_labels();
+    };
+
+    music_btn.on_click = [&]() {
+        music_vol_idx = (music_vol_idx + 1) % 11;
+        audio.SetMusicVolume((music_vol_idx * 128) / 10);
+        update_settings_labels();
+    };
+
+    sfx_btn.on_click = [&]() {
+        sfx_vol_idx = (sfx_vol_idx + 1) % 11;
+        audio.SetSFXVolume((sfx_vol_idx * 128) / 10);
+        update_settings_labels();
+    };
+
+    auto setup_graphics_window = [&]() {
+        update_settings_labels();
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 80, 250, 160 }, Localize("Settings"));
+        w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
+            float start_y = content.y + 20.0f;
+            float center_x = content.x + (content.w - 200.0f) * 0.5f;
+            vsync_btn.rect = { center_x, start_y, 200, 45 };
+            back_to_cats_btn.rect = { center_x, start_y + 55, 200, 45 };
+            vsync_btn.Draw(r, menu_font.get());
+            back_to_cats_btn.Draw(r, menu_font.get());
+        });
+        return w;
+    };
+
+    auto setup_audio_window = [&]() {
+        update_settings_labels();
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 110, 250, 220 }, Localize("Settings"));
+        w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
+            float start_y = content.y + 20.0f;
+            float center_x = content.x + (content.w - 200.0f) * 0.5f;
+            music_btn.rect = { center_x, start_y, 200, 45 };
+            sfx_btn.rect = { center_x, start_y + 55, 200, 45 };
+            back_to_cats_btn.rect = { center_x, start_y + 110, 200, 45 };
+            music_btn.Draw(r, menu_font.get());
+            sfx_btn.Draw(r, menu_font.get());
+            back_to_cats_btn.Draw(r, menu_font.get());
+        });
+        return w;
+    };
+
+    auto setup_controls_window = [&]() {
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 110, 250, 220 }, Localize("Settings"));
+        w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
+            float start_y = content.y + 20.0f;
+            float center_x = content.x + (content.w - 200.0f) * 0.5f;
+            
+            TextRenderer::DrawText(r, menu_font.get(), content.x + 20, start_y, Localize("WASD to Move"), {200, 200, 200, 255});
+            TextRenderer::DrawText(r, menu_font.get(), content.x + 20, start_y + 25, Localize("E for Inventory"), {200, 200, 200, 255});
+            TextRenderer::DrawText(r, menu_font.get(), content.x + 20, start_y + 50, Localize("RMB to Mine"), {200, 200, 200, 255});
+
+            back_to_cats_btn.rect = { center_x, start_y + 110, 200, 45 };
+            back_to_cats_btn.Draw(r, menu_font.get());
+        });
+        return w;
+    };
+
+    setup_settings_categories_window = [&]() {
+        settings_state = SettingsState::Categories;
+        update_settings_labels();
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 140, 250, 280 }, Localize("Settings"));
+        w->SetChromeVisible(false);
+        
+        w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
+            float start_y = content.y + 20.0f;
+            float center_x = content.x + (content.w - 200.0f) * 0.5f;
+
+            graphics_cat_btn.rect = { center_x, start_y, 200, 45 };
+            audio_cat_btn.rect = { center_x, start_y + 55, 200, 45 };
+            controls_cat_btn.rect = { center_x, start_y + 110, 200, 45 };
+            back_to_menu_btn.rect = { center_x, start_y + 165, 200, 45 };
+
+            graphics_cat_btn.Draw(r, menu_font.get());
+            audio_cat_btn.Draw(r, menu_font.get());
+            controls_cat_btn.Draw(r, menu_font.get());
+            back_to_menu_btn.Draw(r, menu_font.get());
+        });
+        return w;
+    };
+
+    graphics_cat_btn.on_click = [&]() {
+        settings_state = SettingsState::Graphics;
+        main_window = setup_graphics_window();
+    };
+
+    audio_cat_btn.on_click = [&]() {
+        settings_state = SettingsState::Audio;
+        main_window = setup_audio_window();
+    };
+
+    controls_cat_btn.on_click = [&]() {
+        settings_state = SettingsState::Controls;
+        main_window = setup_controls_window();
+    };
+
+    back_to_menu_btn.on_click = [&]() {
+        in_settings = false;
+        main_window = setup_menu_window();
+    };
+
+    back_to_cats_btn.on_click = [&]() {
+        main_window = setup_settings_categories_window();
+    };
+
+    main_window = setup_menu_window();
     GUIWindow* resource_panel = gui_engine.CreateInfoWindow(SDL_FRect{0, 0, 220, 110});
     GUIWindow* crafting_queue_window = gui_engine.CreateQueueWindow(SDL_FRect{10.0f, (float)win_h - 120.0f, 260.0f, 100.0f});
     crafting_queue_window->SetVisible(false);
     crafting_queue_window->SetBackgroundColor(SDL_Color{14, 15, 18, 230});
     crafting_queue_window->SetBorderColor(SDL_Color{42, 46, 54, 255});
     crafting_queue_window->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
-        if (crafting) crafting->draw_queue(renderer, debug_font.get(), content_rect);
+        if (crafting) crafting->draw_queue(renderer, game_font.get(), content_rect);
     });
     resource_panel->SetVisible(false);
     resource_panel->SetBackgroundColor(SDL_Color{21, 24, 29, 245});
@@ -276,22 +416,22 @@ int main() {
         const SDL_Color muted = {170, 176, 184, 255};
         const SDL_Color accent_color = {220, 196, 134, 255};
 
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, resource_panel_name, title_color);
-        y += 24.0f;
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, resource_panel_name, title_color);
+        y += 18.0f;
 
         char line[128];
         const std::string yield_label = Localize("Yield");
         snprintf(line, sizeof(line), "%s: %d", yield_label.c_str(), resource_panel_yield);
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
-        y += 24.0f;
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
+        y += 18.0f;
 
         const std::string type_label = Localize("Type");
         const std::string resource_name = resource_panel_type == IRON_ORE ? Localize("Iron Ore") : Localize("Stone");
         snprintf(line, sizeof(line), "%s: %s", type_label.c_str(), resource_name.c_str());
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
-        y += 24.0f;
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
+        y += 18.0f;
 
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, Localize("Hold RMB to mine"), accent_color);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, Localize("Hold RMB to mine"), accent_color);
     });
 
     auto status_draw_callback = [&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
@@ -306,7 +446,7 @@ int main() {
 
         const float left = content_rect.x + 8.0f;
         float y = content_rect.y + 8.0f;
-        const float line_step = 24.0f;
+        const float line_step = 18.0f;
         const SDL_Color label = {238, 239, 242, 255};
         const SDL_Color muted = {165, 172, 180, 255};
 
@@ -321,37 +461,37 @@ int main() {
         const std::string log_level_label = Localize("Log level");
 
         snprintf(line, sizeof(line), "%s: %.1f", fps_label.c_str(), fps);
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, label);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, label);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", renderer_label.c_str(), SDL_GetRendererName(renderer) ? SDL_GetRendererName(renderer) : "<unknown>");
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", vsync_label.c_str(), config.vsync_enabled ? "on" : "off");
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f", player_label.c_str(), player.player.x, player.player.y);
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         int debug_player_tile_x = (int)player.player.x / TILE_SIZE;
         int debug_player_tile_y = (int)player.player.y / TILE_SIZE;
         snprintf(line, sizeof(line), "%s: %d, %d", tile_label.c_str(), debug_player_tile_x, debug_player_tile_y);
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f zoom=%.2f", camera_label.c_str(), cam.x, cam.y, cam.zoom);
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %zu", chunks_label.c_str(), world.get_chunks().size());
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: %s", log_level_label.c_str(), log_level_name(config.log_level));
-        TextRenderer::DrawText(renderer, debug_font.get(), left, y, line, muted);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
     };
 
     play_button.on_click = [&]() {
@@ -361,8 +501,9 @@ int main() {
         main_window->SetContentDrawCallback(status_draw_callback);
     };
 
-    settings_button.on_click = []() {
-        Logger::Log("UI", Logger::Level::Info, "Settings menu opened (Not implemented)");
+    settings_button.on_click = [&]() {
+        in_settings = true;
+        main_window = setup_settings_categories_window();
     };
 
     bool running = true;
@@ -398,17 +539,67 @@ int main() {
                 float mx, my;
                 SDL_GetMouseState(&mx, &my);
                 if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) {
-                    play_button.HandleMouseDown(mx, my);
-                    settings_button.HandleMouseDown(mx, my);
-                    exit_button.HandleMouseDown(mx, my);
+                    if (!in_settings) {
+                        play_button.HandleMouseDown(mx, my);
+                        settings_button.HandleMouseDown(mx, my);
+                        exit_button.HandleMouseDown(mx, my);
+                    } else {
+                        if (settings_state == SettingsState::Categories) {
+                            graphics_cat_btn.HandleMouseDown(mx, my);
+                            audio_cat_btn.HandleMouseDown(mx, my);
+                            controls_cat_btn.HandleMouseDown(mx, my);
+                            back_to_menu_btn.HandleMouseDown(mx, my);
+                        } else if (settings_state == SettingsState::Graphics) {
+                            vsync_btn.HandleMouseDown(mx, my);
+                            back_to_cats_btn.HandleMouseDown(mx, my);
+                        } else if (settings_state == SettingsState::Audio) {
+                            music_btn.HandleMouseDown(mx, my);
+                            sfx_btn.HandleMouseDown(mx, my);
+                            back_to_cats_btn.HandleMouseDown(mx, my);
+                        } else if (settings_state == SettingsState::Controls) {
+                            back_to_cats_btn.HandleMouseDown(mx, my);
+                        }
+                    }
                 } else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT) {
-                    play_button.HandleMouseUp(mx, my);
-                    settings_button.HandleMouseUp(mx, my);
-                    exit_button.HandleMouseUp(mx, my);
+                    if (!in_settings) {
+                        play_button.HandleMouseUp(mx, my);
+                        settings_button.HandleMouseUp(mx, my);
+                        exit_button.HandleMouseUp(mx, my);
+                    } else {
+                        if (settings_state == SettingsState::Categories) {
+                            graphics_cat_btn.HandleMouseUp(mx, my);
+                            audio_cat_btn.HandleMouseUp(mx, my);
+                            controls_cat_btn.HandleMouseUp(mx, my);
+                            back_to_menu_btn.HandleMouseUp(mx, my);
+                        } else if (settings_state == SettingsState::Graphics) {
+                            vsync_btn.HandleMouseUp(mx, my);
+                            back_to_cats_btn.HandleMouseUp(mx, my);
+                        } else if (settings_state == SettingsState::Audio) {
+                            music_btn.HandleMouseUp(mx, my);
+                            sfx_btn.HandleMouseUp(mx, my);
+                            back_to_cats_btn.HandleMouseUp(mx, my);
+                        } else if (settings_state == SettingsState::Controls) {
+                            back_to_cats_btn.HandleMouseUp(mx, my);
+                        }
+                    }
                 } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
-                    play_button.HandleMouseMove(mx, my);
-                    settings_button.HandleMouseMove(mx, my);
-                    exit_button.HandleMouseMove(mx, my);
+                    if (!in_settings) {
+                        play_button.HandleMouseMove(mx, my);
+                        settings_button.HandleMouseMove(mx, my);
+                        exit_button.HandleMouseMove(mx, my);
+                    } else {
+                        if (settings_state == SettingsState::Categories) {
+                            graphics_cat_btn.HandleMouseMove(mx, my);
+                            audio_cat_btn.HandleMouseMove(mx, my);
+                            controls_cat_btn.HandleMouseMove(mx, my);
+                            back_to_menu_btn.HandleMouseMove(mx, my);
+                        } else {
+                            vsync_btn.HandleMouseMove(mx, my);
+                            music_btn.HandleMouseMove(mx, my);
+                            sfx_btn.HandleMouseMove(mx, my);
+                            back_to_cats_btn.HandleMouseMove(mx, my);
+                        }
+                    }
                 }
             }
 
@@ -598,7 +789,7 @@ int main() {
         if (state == GameState::Menu) {
             const std::string game_title = "Aquilon";
             int title_w, title_h;
-            TTF_Font* draw_font = title_font ? title_font.get() : debug_font.get();
+            TTF_Font* draw_font = title_font ? title_font.get() : menu_font.get();
             TTF_GetStringSize(draw_font, game_title.c_str(), 0, &title_w, &title_h);
             float title_x = (win_w - title_w) / 2.0f;
             float title_y = 50.0f;
@@ -607,10 +798,10 @@ int main() {
             char version_text[128];
             snprintf(version_text, sizeof(version_text), "v%s build %s (%s)", GAME_VERSION, BUILD_NUMBER, BUILD_DATE);
             int version_w, version_h;
-            TTF_GetStringSize(debug_font.get(), version_text, 0, &version_w, &version_h);
+            TTF_GetStringSize(menu_font.get(), version_text, 0, &version_w, &version_h);
             float version_x = 10.0f;
             float version_y = win_h - version_h - 10.0f;
-            TextRenderer::DrawText(renderer, debug_font.get(), version_x, version_y, version_text, {150, 150, 150, 255});
+            TextRenderer::DrawText(renderer, menu_font.get(), version_x, version_y, version_text, {150, 150, 150, 255});
         }
 
 
@@ -623,7 +814,7 @@ int main() {
         gui_engine.RenderAll();
 
         if (state == GameState::Playing) {
-            inv.draw(renderer, debug_font.get());
+            inv.draw(renderer, game_font.get());
             player.draw_mining_progress_bar(renderer, win_w, win_h);
         }
 
