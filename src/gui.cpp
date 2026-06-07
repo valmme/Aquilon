@@ -217,7 +217,14 @@ void GUICombo::HandleMouseDown(float mx, float my) {
 }
 
 void GUICombo::HandleMouseMove(float mx, float my) {
-    hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+    bool over_main = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+    bool over_options = false;
+    if (expanded) {
+        float total_h = (float)options.size() * rect.h;
+        over_options = (mx >= rect.x && mx <= rect.x + rect.w && 
+                        my >= rect.y + rect.h && my <= rect.y + rect.h + total_h);
+    }
+    hovered = over_main || over_options;
 }
 
 void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
@@ -242,12 +249,16 @@ void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
         float text_h = (float)TTF_GetFontHeight(font) * font_scale;
         TextRenderer::DrawTextScaled(renderer, font, rect.x + 8, rect.y + (rect.h - text_h) * 0.5f, display, text_color, font_scale);
         
-        TextRenderer::DrawText(renderer, font, rect.x + rect.w - 20, rect.y + (rect.h - (float)TTF_GetFontHeight(font)) * 0.5f, expanded ? "^" : "v", text_color);
+        float arrow_h = (float)TTF_GetFontHeight(font) * font_scale;
+        TextRenderer::DrawTextScaled(renderer, font, rect.x + rect.w - 20 * font_scale, rect.y + (rect.h - arrow_h) * 0.5f, expanded ? "^" : "v", text_color, font_scale);
     }
 
     if (expanded) {
-        for (int i = 0; i < (int)options.size(); ++i) {
-            SDL_FRect opt_rect = GetOptionRect(i);
+        int visible_count = std::min((int)options.size(), max_visible_items);
+        
+        for (int i = 0; i < visible_count; ++i) {
+            int idx = i + scroll_index;
+            SDL_FRect opt_rect = { rect.x, rect.y + rect.h + (float)i * rect.h, rect.w, rect.h };
             
             float mx, my;
             SDL_GetMouseState(&mx, &my);
@@ -259,9 +270,26 @@ void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
             SDL_RenderRect(renderer, &opt_rect);
 
             if (font) {
-                SDL_Color opt_text_color = (i == selected_index) ? SDL_Color{220, 196, 134, 255} : SDL_Color{200, 200, 200, 255};
-                TextRenderer::DrawText(renderer, font, opt_rect.x + 8, opt_rect.y + (opt_rect.h - (float)TTF_GetFontHeight(font)) * 0.5f, options[i], opt_text_color);
+                SDL_Color opt_text_color = (idx == selected_index) ? SDL_Color{220, 196, 134, 255} : SDL_Color{200, 200, 200, 255};
+                TextRenderer::DrawText(renderer, font, opt_rect.x + 8, opt_rect.y + (opt_rect.h - (float)TTF_GetFontHeight(font)) * 0.5f, options[idx], opt_text_color);
             }
+        }
+
+        if (options.size() > (size_t)max_visible_items) {
+            SDL_FRect scroll_track = GetScrollbarRect();
+            SDL_SetRenderDrawColor(renderer, 30, 33, 39, 255);
+            SDL_RenderFillRect(renderer, &scroll_track);
+            SDL_SetRenderDrawColor(renderer, 42, 46, 54, 255);
+            SDL_RenderRect(renderer, &scroll_track);
+
+            float track_h = scroll_track.h;
+            float handle_h = std::max(10.0f, (float)max_visible_items / (float)options.size() * track_h);
+            float scroll_pct = (float)scroll_index / (float)(options.size() - max_visible_items);
+            float handle_y = scroll_track.y + (track_h - handle_h) * scroll_pct;
+
+            SDL_FRect scroll_handle = { scroll_track.x + 2, handle_y + 2, scroll_track.w - 4, handle_h - 4 };
+            SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
+            SDL_RenderFillRect(renderer, &scroll_handle);
         }
     }
 }

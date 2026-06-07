@@ -75,17 +75,23 @@ public:
     int selected_index;
     bool expanded;
     bool hovered;
+    int scroll_index;
+    int max_visible_items;
+    bool dragging_scroll;
     float font_scale;
     Uint64 last_ticks;
     std::function<void(int)> on_change;
 
     GUICombo(SDL_FRect rect, const std::string& label, const std::vector<std::string>& options, int initial = 0);
     void HandleMouseDown(float mx, float my);
+    void HandleMouseUp(float mx, float my);
+    void HandleMouseWheel(float y);
     void HandleMouseMove(float mx, float my);
     void Draw(SDL_Renderer* renderer, TTF_Font* font);
 
 private:
     SDL_FRect GetOptionRect(int index) const;
+    SDL_FRect GetScrollbarRect() const;
 };
 
 class GUIWindow {
