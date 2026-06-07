@@ -18,8 +18,14 @@ static SDL_FRect drill_icon_rect(const SDL_FRect& panel) {
     };
 }
 
+static float slots_row_y(const SDL_FRect& panel) {
+    float main_area_y = panel.y + PANEL_PAD;
+    float main_area_h = ICON_SIZE + 20.0f;
+    return main_area_y + main_area_h + 10.0f;
+}
+
 static SDL_FRect fuel_slot_rect(const SDL_FRect& panel) {
-    return { panel.x + PANEL_PAD, panel.y + PANEL_PAD + ICON_SIZE + 28.0f, SLOT_SIZE, SLOT_SIZE };
+    return { panel.x + PANEL_PAD, slots_row_y(panel) + SLOT_SIZE, SLOT_SIZE, SLOT_SIZE };
 }
 
 static SDL_FRect fuel_bar_rect(const SDL_FRect& panel) {
@@ -187,13 +193,31 @@ void DrillPanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec, 
 
     if (font)
         TextRenderer::DrawText(renderer, font,
-            dot_x + dot_r + 4.0f, panel_rec.y + PANEL_PAD,
+            dot_x + dot_r + 4.0f, panel_rec.y + PANEL_PAD - 2,
             status_text, status_col);
 
-    SDL_FRect icon_dst = drill_icon_rect(panel_rec);
+    float main_area_y = panel_rec.y + PANEL_PAD + 22.0f;
+    float main_area_h = ICON_SIZE + 20.0f;
+    SDL_FRect main_area = {
+        panel_rec.x + PANEL_PAD,
+        main_area_y,
+        panel_rec.w - PANEL_PAD * 2.0f,
+        main_area_h
+    };
+
+    SDL_SetRenderDrawColor(renderer, 20, 22, 27, 255);
+    SDL_RenderFillRect(renderer, &main_area);
+    SDL_SetRenderDrawColor(renderer, 32, 36, 44, 255);
+    SDL_RenderRect(renderer, &main_area);
+
     if (tex.drill) {
+        SDL_FRect ficon = {
+            main_area.x + main_area.w * 0.5f - ICON_SIZE * 0.5f,
+            main_area.y + main_area.h * 0.5f - ICON_SIZE * 0.5f,
+            ICON_SIZE, ICON_SIZE
+        };
         SDL_SetTextureScaleMode(tex.drill, SDL_SCALEMODE_NEAREST);
-        SDL_RenderTexture(renderer, tex.drill, nullptr, &icon_dst);
+        SDL_RenderTexture(renderer, tex.drill, nullptr, &ficon);
     }
 
     SDL_FRect fuel_r = fuel_slot_rect(panel_rec);

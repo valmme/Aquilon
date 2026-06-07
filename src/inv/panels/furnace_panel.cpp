@@ -282,7 +282,7 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
 
         if (font)
             TextRenderer::DrawText(renderer, font,
-                dot_x + dot_r + 4.0f, panel_rec.y + PANEL_PAD,
+                dot_x + dot_r + 4.0f, panel_rec.y + PANEL_PAD - 2,
                 status_text, status_col);
     }
 
@@ -376,6 +376,7 @@ void FurnacePanel::draw_panel(SDL_Renderer* renderer, const SDL_FRect& panel_rec
             SDL_SetRenderDrawColor(renderer, 8, 9, 11, 210);
             SDL_RenderFillRect(renderer, &bg);
             SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
+         
             TextRenderer::DrawText(renderer, font, bg.x + 2.0f, bg.y + 1.0f, buf, {235, 237, 241, 255});
         }
     };

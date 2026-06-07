@@ -157,9 +157,11 @@ int main() {
     Inventory inv(gui_engine, tex, game_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, game_font.get());
     FurnacePanel* furnace_panel = new FurnacePanel(tex, game_font.get());
-    furnace_panel->initialize_recipes();
     DrillPanel* drill_panel = new DrillPanel(tex, game_font.get());
+
+    furnace_panel->initialize_recipes();
     initialize_items(tex);
+
     inv.set_crafting_system(crafting);
     inv.set_active_panel(crafting);
 
@@ -182,10 +184,9 @@ int main() {
         }
     };
 
-    inv.pick(item_stack(Item::FURNACE, 67));
-    inv.pick(item_stack(Item::IRON_PLATE, 31));
+    inv.pick(item_stack(Item::IRON_PLATE, 32));
     inv.pick(item_stack(Item::COAL, 32));
-    inv.pick(item_stack(Item::DRILL, 10));
+    inv.pick(item_stack(Item::STONE, 32));
 
     crafting->initialize_recipes(&tex);
 

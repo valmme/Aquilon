@@ -227,6 +227,17 @@ void GUICombo::HandleMouseMove(float mx, float my) {
     hovered = over_main || over_options;
 }
 
+SDL_FRect GUICombo::GetScrollbarRect() const {
+    float scrollbar_width = 8.0f;
+    float list_height = (float)max_visible_items * rect.h;
+    return {
+        rect.x + rect.w - scrollbar_width,
+        rect.y + rect.h,
+        scrollbar_width,
+        list_height
+    };
+}
+
 void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
     Uint64 current_ticks = SDL_GetTicks();
     if (last_ticks == 0) last_ticks = current_ticks;
