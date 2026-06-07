@@ -3,6 +3,42 @@ project(Aquilon CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+set(GAME_VERSION "0.1.0")
+
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_HASH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-list --count HEAD
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_COMMIT_COUNT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+endif()
+
+if(NOT GIT_HASH)
+    set(GIT_HASH "unknown")
+endif()
+if(NOT GIT_COMMIT_COUNT)
+    set(GIT_COMMIT_COUNT "0")
+endif()
+
+set(BUILD_NUMBER "${GIT_COMMIT_COUNT}.${GIT_HASH}")
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
+
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/version.h.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include/version.h"
+    @ONLY
+)
+
 include(FetchContent)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5 CACHE STRING "" FORCE)
 

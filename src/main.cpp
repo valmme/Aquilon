@@ -60,6 +60,8 @@ int main() {
     Logger::SetLogFile("aquilon.log");
     Logger::SetConsoleOutput(true);
 
+    SDL_SetAppMetadata("Aquilon", GAME_VERSION, "com.valme.aquilon");
+
     Logger::Log("SYSTEM", Logger::Level::Info, "Initializing SDL video subsystem.");
     if (!SDL_Init(SDL_INIT_VIDEO)) {
         Logger::Log("SYSTEM", Logger::Level::Fatal, "Failed to initialize SDL: %s", SDL_GetError());
@@ -602,8 +604,8 @@ int main() {
             float title_y = 50.0f;
             TextRenderer::DrawText(renderer, draw_font, title_x, title_y, game_title, {255, 255, 255, 255});
 
-            char version_text[64];
-            snprintf(version_text, sizeof(version_text), "v%s build %s", GAME_VERSION, BUILD_NUMBER);
+            char version_text[128];
+            snprintf(version_text, sizeof(version_text), "v%s build %s (%s)", GAME_VERSION, BUILD_NUMBER, BUILD_DATE);
             int version_w, version_h;
             TTF_GetStringSize(debug_font.get(), version_text, 0, &version_w, &version_h);
             float version_x = 10.0f;

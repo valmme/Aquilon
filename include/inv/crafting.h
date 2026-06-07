@@ -57,4 +57,4 @@ private:
     static const char* item_type_name(ItemType type);
 };
 
-#endif
+#endif // AQUILON_CRAFTING_H
