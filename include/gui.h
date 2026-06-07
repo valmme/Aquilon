@@ -30,6 +30,64 @@ private:
     SDL_Color GetTextColor() const;
 };
 
+class GUICheckbox {
+public:
+    SDL_FRect rect;
+    std::string label;
+    bool checked;
+    bool hovered;
+    float font_scale;
+    Uint64 last_ticks;
+    std::function<void(bool)> on_change;
+
+    GUICheckbox(SDL_FRect rect, const std::string& label, bool initial = false);
+    void HandleMouseDown(float mx, float my);
+    void HandleMouseMove(float mx, float my);
+    void Draw(SDL_Renderer* renderer, TTF_Font* font);
+};
+
+class GUISlider {
+public:
+    SDL_FRect rect;
+    std::string label;
+    float value;
+    bool hovered;
+    bool dragging;
+    float font_scale;
+    Uint64 last_ticks;
+    std::function<void(float)> on_change;
+
+    GUISlider(SDL_FRect rect, const std::string& label, float initial = 0.5f);
+    void HandleMouseDown(float mx, float my);
+    void HandleMouseUp(float mx, float my);
+    void HandleMouseMove(float mx, float my);
+    void Draw(SDL_Renderer* renderer, TTF_Font* font);
+
+private:
+    void UpdateValueFromMouse(float mx);
+};
+
+class GUICombo {
+public:
+    SDL_FRect rect;
+    std::string label;
+    std::vector<std::string> options;
+    int selected_index;
+    bool expanded;
+    bool hovered;
+    float font_scale;
+    Uint64 last_ticks;
+    std::function<void(int)> on_change;
+
+    GUICombo(SDL_FRect rect, const std::string& label, const std::vector<std::string>& options, int initial = 0);
+    void HandleMouseDown(float mx, float my);
+    void HandleMouseMove(float mx, float my);
+    void Draw(SDL_Renderer* renderer, TTF_Font* font);
+
+private:
+    SDL_FRect GetOptionRect(int index) const;
+};
+
 class GUIWindow {
 public:
     SDL_FRect size;

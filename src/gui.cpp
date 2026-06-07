@@ -90,6 +90,182 @@ void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
     }
 }
 
+GUICheckbox::GUICheckbox(SDL_FRect rect, const std::string& label, bool initial)
+    : rect(rect), label(label), checked(initial), hovered(false), font_scale(1.0f), last_ticks(0) {}
+
+void GUICheckbox::HandleMouseDown(float mx, float my) {
+    if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
+        checked = !checked;
+        if (on_change) on_change(checked);
+    }
+}
+
+void GUICheckbox::HandleMouseMove(float mx, float my) {
+    hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+}
+
+void GUICheckbox::Draw(SDL_Renderer* renderer, TTF_Font* font) {
+    Uint64 current_ticks = SDL_GetTicks();
+    if (last_ticks == 0) last_ticks = current_ticks;
+    float dt = (float)(current_ticks - last_ticks) / 1000.0f;
+    last_ticks = current_ticks;
+    if (dt > 0.1f) dt = 0.1f;
+
+    float target = hovered ? 1.15f : 1.0f;
+    font_scale += (target - font_scale) * 10.0f * dt;
+
+    float box_size = rect.h * 0.6f;
+    SDL_FRect box_rect = { rect.x, rect.y + (rect.h - box_size) * 0.5f, box_size, box_size };
+
+    SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
+    SDL_RenderFillRect(renderer, &box_rect);
+    SDL_SetRenderDrawColor(renderer, hovered ? 60 : 42, hovered ? 65 : 46, hovered ? 75 : 54, 255);
+    SDL_RenderRect(renderer, &box_rect);
+
+    if (checked) {
+        SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
+        SDL_FRect check_mark = { box_rect.x + 4, box_rect.y + 4, box_rect.w - 8, box_rect.h - 8 };
+        SDL_RenderFillRect(renderer, &check_mark);
+    }
+
+    if (font) {
+        SDL_Color text_color = hovered ? SDL_Color{210, 213, 218, 255} : SDL_Color{155, 160, 168, 255};
+        TextRenderer::DrawTextScaled(renderer, font, box_rect.x + box_rect.w + 10.0f, rect.y + (rect.h - (float)TTF_GetFontHeight(font) * font_scale) * 0.5f, label, text_color, font_scale);
+    }
+}
+
+GUISlider::GUISlider(SDL_FRect rect, const std::string& label, float initial)
+    : rect(rect), label(label), value(initial), hovered(false), dragging(false), font_scale(1.0f), last_ticks(0) {}
+
+void GUISlider::UpdateValueFromMouse(float mx) {
+    value = (mx - rect.x) / rect.w;
+    if (value < 0.0f) value = 0.0f;
+    if (value > 1.0f) value = 1.0f;
+    if (on_change) on_change(value);
+}
+
+void GUISlider::HandleMouseDown(float mx, float my) {
+    if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
+        dragging = true;
+        UpdateValueFromMouse(mx);
+    }
+}
+
+void GUISlider::HandleMouseUp(float mx, float my) {
+    dragging = false;
+}
+
+void GUISlider::HandleMouseMove(float mx, float my) {
+    hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+    if (dragging) UpdateValueFromMouse(mx);
+}
+
+void GUISlider::Draw(SDL_Renderer* renderer, TTF_Font* font) {
+    Uint64 current_ticks = SDL_GetTicks();
+    if (last_ticks == 0) last_ticks = current_ticks;
+    float dt = (float)(current_ticks - last_ticks) / 1000.0f;
+    last_ticks = current_ticks;
+    if (dt > 0.1f) dt = 0.1f;
+
+    float target = (hovered || dragging) ? 1.1f : 1.0f;
+    font_scale += (target - font_scale) * 10.0f * dt;
+
+    SDL_FRect bar = { rect.x, rect.y + rect.h * 0.6f, rect.w, 6.0f };
+    SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
+    SDL_RenderFillRect(renderer, &bar);
+    
+    SDL_FRect fill = { bar.x, bar.y, bar.w * value, bar.h };
+    SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
+    SDL_RenderFillRect(renderer, &fill);
+
+    SDL_FRect handle = { bar.x + bar.w * value - 5.0f, bar.y - 4.0f, 10.0f, 14.0f };
+    SDL_SetRenderDrawColor(renderer, 242, 244, 246, 255);
+    SDL_RenderFillRect(renderer, &handle);
+
+    if (font) {
+        std::string full_label = label + ": " + std::to_string((int)(value * 100)) + "%";
+        SDL_Color text_color = (hovered || dragging) ? SDL_Color{210, 213, 218, 255} : SDL_Color{155, 160, 168, 255};
+        TextRenderer::DrawTextScaled(renderer, font, rect.x, rect.y, full_label, text_color, font_scale);
+    }
+}
+
+GUICombo::GUICombo(SDL_FRect rect, const std::string& label, const std::vector<std::string>& options, int initial)
+    : rect(rect), label(label), options(options), selected_index(initial), expanded(false), hovered(false), font_scale(1.0f), last_ticks(0) {}
+
+SDL_FRect GUICombo::GetOptionRect(int index) const {
+    return { rect.x, rect.y + rect.h + (float)index * rect.h, rect.w, rect.h };
+}
+
+void GUICombo::HandleMouseDown(float mx, float my) {
+    if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
+        expanded = !expanded;
+        return;
+    }
+
+    if (expanded) {
+        for (int i = 0; i < (int)options.size(); ++i) {
+            SDL_FRect opt_rect = GetOptionRect(i);
+            if (mx >= opt_rect.x && mx <= opt_rect.x + opt_rect.w && my >= opt_rect.y && my <= opt_rect.y + opt_rect.h) {
+                selected_index = i;
+                expanded = false;
+                if (on_change) on_change(selected_index);
+                return;
+            }
+        }
+        expanded = false;
+    }
+}
+
+void GUICombo::HandleMouseMove(float mx, float my) {
+    hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+}
+
+void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
+    Uint64 current_ticks = SDL_GetTicks();
+    if (last_ticks == 0) last_ticks = current_ticks;
+    float dt = (float)(current_ticks - last_ticks) / 1000.0f;
+    last_ticks = current_ticks;
+    if (dt > 0.1f) dt = 0.1f;
+
+    float target = hovered ? 1.1f : 1.0f;
+    font_scale += (target - font_scale) * 10.0f * dt;
+
+    SDL_SetRenderDrawColor(renderer, 22, 24, 29, 255);
+    SDL_RenderFillRect(renderer, &rect);
+    SDL_SetRenderDrawColor(renderer, hovered ? 60 : 42, hovered ? 65 : 46, hovered ? 75 : 54, 255);
+    SDL_RenderRect(renderer, &rect);
+
+    if (font) {
+        std::string display = options.empty() ? "" : options[selected_index];
+        SDL_Color text_color = {242, 244, 246, 255};
+        
+        float text_h = (float)TTF_GetFontHeight(font) * font_scale;
+        TextRenderer::DrawTextScaled(renderer, font, rect.x + 8, rect.y + (rect.h - text_h) * 0.5f, display, text_color, font_scale);
+        
+        TextRenderer::DrawText(renderer, font, rect.x + rect.w - 20, rect.y + (rect.h - (float)TTF_GetFontHeight(font)) * 0.5f, expanded ? "^" : "v", text_color);
+    }
+
+    if (expanded) {
+        for (int i = 0; i < (int)options.size(); ++i) {
+            SDL_FRect opt_rect = GetOptionRect(i);
+            
+            float mx, my;
+            SDL_GetMouseState(&mx, &my);
+            bool opt_hovered = (mx >= opt_rect.x && mx <= opt_rect.x + opt_rect.w && my >= opt_rect.y && my <= opt_rect.y + opt_rect.h);
+
+            SDL_SetRenderDrawColor(renderer, opt_hovered ? 38 : 14, opt_hovered ? 41 : 15, opt_hovered ? 48 : 18, 255);
+            SDL_RenderFillRect(renderer, &opt_rect);
+            SDL_SetRenderDrawColor(renderer, 42, 46, 54, 255);
+            SDL_RenderRect(renderer, &opt_rect);
+
+            if (font) {
+                SDL_Color opt_text_color = (i == selected_index) ? SDL_Color{220, 196, 134, 255} : SDL_Color{200, 200, 200, 255};
+                TextRenderer::DrawText(renderer, font, opt_rect.x + 8, opt_rect.y + (opt_rect.h - (float)TTF_GetFontHeight(font)) * 0.5f, options[i], opt_text_color);
+            }
+        }
+    }
+}
+
 static constexpr SDL_Color GUI_BG_COLOR = {14, 15, 18, 248};
 static constexpr SDL_Color GUI_BORDER_COLOR = {42, 46, 54, 255};
 static constexpr SDL_Color GUI_TITLE_BG_COLOR = {18, 19, 23, 255};
