@@ -4,11 +4,17 @@
 #include <cmath>
 
 GUIButton::GUIButton(SDL_FRect rect, const std::string& label)
-    : rect(rect), label(label), hovered(false), pressed(false) {}
+    : rect(rect), label(label), hovered(false), pressed(false), font_scale(1.0f) {}
 
 bool GUIButton::IsMouseOver(float mouse_x, float mouse_y) const {
     return mouse_x >= rect.x && mouse_x <= rect.x + rect.w &&
            mouse_y >= rect.y && mouse_y <= rect.y + rect.h;
+}
+
+void GUIButton::Update(float delta_time) {
+    float target = hovered ? 1.2f : 1.0f;
+    float speed = 10.0f;
+    font_scale += (target - font_scale) * speed * delta_time;
 }
 
 void GUIButton::HandleMouseDown(float mouse_x, float mouse_y) {
@@ -70,10 +76,13 @@ void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
         int text_w = 0;
         int text_h = 0;
         TTF_GetStringSize(font, label.c_str(), 0, &text_w, &text_h);
-        float text_x = rect.x + (rect.w - (float)text_w) * 0.5f;
-        float text_y = rect.y + (rect.h - (float)text_h) * 0.5f;
+
+        float scaled_w = (float)text_w * font_scale;
+        float scaled_h = (float)text_h * font_scale;
+        float text_x = rect.x + (rect.w - scaled_w) * 0.5f;
+        float text_y = rect.y + (rect.h - scaled_h) * 0.5f;
         
-        TextRenderer::DrawText(renderer, font, text_x, text_y, label, text_color);
+        TextRenderer::DrawTextScaled(renderer, font, text_x, text_y, label, text_color, font_scale);
     }
 }
 

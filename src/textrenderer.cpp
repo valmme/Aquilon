@@ -139,6 +139,34 @@ bool DrawText(SDL_Renderer* renderer,
     return true;
 }
 
+bool DrawTextScaled(SDL_Renderer* renderer,
+                    TTF_Font* font,
+                    float x,
+                    float y,
+                    std::string_view text,
+                    const SDL_Color& color,
+                    float scale,
+                    SDL_FRect* out_dst) {
+    const CachedTexture* cached = GetCachedTexture(renderer, font, text, color);
+    if (!cached || !cached->texture) {
+        return false;
+    }
+
+    SDL_FRect dst = {
+        std::floor(x),
+        std::floor(y),
+        (float)cached->w * scale,
+        (float)cached->h * scale
+    };
+
+    if (out_dst) {
+        *out_dst = dst;
+    }
+
+    SDL_RenderTexture(renderer, cached->texture, nullptr, &dst);
+    return true;
+}
+
 bool DrawTextShadow(SDL_Renderer* renderer,
                     TTF_Font* font,
                     float x,

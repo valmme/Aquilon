@@ -15,6 +15,15 @@ bool DrawText(SDL_Renderer* renderer,
               const SDL_Color& color,
               SDL_FRect* out_dst = nullptr);
 
+bool DrawTextScaled(SDL_Renderer* renderer,
+                    TTF_Font* font,
+                    float x,
+                    float y,
+                    std::string_view text,
+                    const SDL_Color& color,
+                    float scale,
+                    SDL_FRect* out_dst = nullptr);
+
 bool DrawTextShadow(SDL_Renderer* renderer,
                     TTF_Font* font,
                     float x,
