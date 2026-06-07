@@ -201,6 +201,7 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
     obj.x = click_tile_x;
     obj.y = click_tile_y;
     obj.size = dragged->size;
+    obj.opens_inv = dragged->opens_inv;
 
     placed_objects.push_back(obj);
     inventory.consume_cursor_item_one();

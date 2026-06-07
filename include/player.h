@@ -77,6 +77,8 @@ public:
         float mining_progress = 0.0f;
         int fuel_amount = 0;
         float fuel_remaining = 0.0f;
+
+        bool opens_inv = false;
     };
 
     struct MiningState {

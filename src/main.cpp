@@ -166,27 +166,36 @@ int main() {
     inv.set_active_panel(crafting);
 
     player.on_object_clicked = [&](const Player::PlacedObject& obj) {
-        if (!inv.open) {
-            inv.open = true;
-            inv.open_window();
-        }
-
         if (obj.type == ItemType::FURNACE) {
             drill_panel->set_target(nullptr);
             inv.set_active_panel(furnace_panel);
+            if (!inv.open) {
+                inv.open = true;
+                inv.open_window();
+            }
             return;
         }
 
         if (obj.type == ItemType::DRILL) {
             drill_panel->set_target(const_cast<Player::PlacedObject*>(&obj));
             inv.set_active_panel(drill_panel);
+            if (!inv.open) {
+                inv.open = true;
+                inv.open_window();
+            }
             return;
+        }
+
+        if (!inv.open && obj.opens_inv) {
+            inv.open = true;
+            inv.open_window();
         }
     };
 
     inv.pick(item_stack(Item::IRON_PLATE, 32));
     inv.pick(item_stack(Item::COAL, 32));
     inv.pick(item_stack(Item::STONE, 32));
+    inv.pick(item_stack(Item::CONVEYOR, 64));
 
     crafting->initialize_recipes(&tex);
 

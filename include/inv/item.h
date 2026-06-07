@@ -32,14 +32,15 @@ struct Item {
     SDL_Texture* texture = nullptr;
 
     bool can_place = false;
+    bool opens_inv = false;
     vec2 size = {2, 2};
 
     Item() = default;
-    Item(ItemType type, const std::string& name, int amount, SDL_Texture* tex, bool can_place = false, vec2 size = {2, 2})
-        : type(type), name(name), amount(amount), texture(tex), can_place(can_place), size(size) {}
+    Item(ItemType type, const std::string& name, int amount, SDL_Texture* tex, bool can_place = false, vec2 size = {2, 2}, bool opens_inv = false)
+        : type(type), name(name), amount(amount), texture(tex), can_place(can_place), size(size), opens_inv(opens_inv) {}
 
     Item* copy() const {
-        return new Item(type, name, amount, texture, can_place, size);
+        return new Item(type, name, amount, texture, can_place, size, opens_inv);
     }
 
     void draw(SDL_Renderer* renderer, float slot_size = 35.0f) const {
