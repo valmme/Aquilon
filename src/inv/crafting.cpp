@@ -46,6 +46,7 @@ static SDL_Texture* ingredient_texture(const Textures& tex, ItemType type) {
         case ItemType::STONE: return tex.stone;
         case ItemType::IRON_ORE: return tex.iron_ore;
         case ItemType::IRON_PLATE: return tex.iron_plate;
+        case ItemType::IRON_GEAR_WHEEL: return tex.iron_gear_wheel;
         case ItemType::COAL: return tex.coal;
         case ItemType::FURNACE: return tex.furnace;
         case ItemType::DRILL: return tex.drill;
@@ -58,6 +59,7 @@ const char* CraftingSystem::item_type_name(ItemType type) {
         case ItemType::STONE: return "Stone";
         case ItemType::IRON_ORE: return "Iron Ore";
         case ItemType::IRON_PLATE: return "Iron Plate";
+        case ItemType::IRON_GEAR_WHEEL: return "Iron Gear Wheel";
         case ItemType::COPPER_ORE: return "Copper Ore";
         case ItemType::COAL: return "Coal";
         case ItemType::FURNACE: return "Furnace";
@@ -67,6 +69,16 @@ const char* CraftingSystem::item_type_name(ItemType type) {
 }
 
 void CraftingSystem::initialize_recipes(Textures* tex) {
+    add_recipe(Recipe{
+        "Iron Gear Wheel",
+        1, 
+        tex->iron_gear_wheel,
+        0.5f,
+        ItemType::IRON_GEAR_WHEEL,
+        {
+            {ItemType::IRON_PLATE, 1}
+        }
+    });
     add_recipe(Recipe{
         "Furnace",
         1,

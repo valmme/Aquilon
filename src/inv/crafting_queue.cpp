@@ -134,13 +134,14 @@ void CraftingQueue::update(float dt, Inventory& inv) {
 std::unordered_map<ItemType, int> CraftingQueue::compute_available(const Inventory& inv) const {
     std::unordered_map<ItemType, int> available;
 
-    available[ItemType::STONE]      = inv.get_amount(ItemType::STONE);
-    available[ItemType::IRON_ORE]   = inv.get_amount(ItemType::IRON_ORE);
-    available[ItemType::IRON_PLATE] = inv.get_amount(ItemType::IRON_PLATE);
-    available[ItemType::COPPER_ORE] = inv.get_amount(ItemType::COPPER_ORE);
-    available[ItemType::COAL]       = inv.get_amount(ItemType::COAL);
-    available[ItemType::FURNACE]    = inv.get_amount(ItemType::FURNACE);
-    available[ItemType::DRILL]      = inv.get_amount(ItemType::DRILL);
+    available[ItemType::STONE]           = inv.get_amount(ItemType::STONE);
+    available[ItemType::IRON_ORE]        = inv.get_amount(ItemType::IRON_ORE);
+    available[ItemType::IRON_PLATE]      = inv.get_amount(ItemType::IRON_PLATE);
+    available[ItemType::IRON_GEAR_WHEEL] = inv.get_amount(ItemType::IRON_GEAR_WHEEL);
+    available[ItemType::COPPER_ORE]      = inv.get_amount(ItemType::COPPER_ORE);
+    available[ItemType::COAL]            = inv.get_amount(ItemType::COAL);
+    available[ItemType::FURNACE]         = inv.get_amount(ItemType::FURNACE);
+    available[ItemType::DRILL]           = inv.get_amount(ItemType::DRILL);
 
     for (const QueuedCraft& entry : items) {
         if (!entry.recipe) continue;

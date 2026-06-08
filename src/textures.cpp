@@ -56,15 +56,16 @@ Textures LoadTextures(SDL_Renderer* renderer) {
     }
 
     // tiles
-    t.ice        = LoadTexture(renderer, t.none, "ice",        "resources/textures/ice.png");
-    t.snow       = LoadTexture(renderer, t.none, "snow",       "resources/textures/snow.png");
-    t.stone      = LoadTexture(renderer, t.none, "stone",      "resources/textures/stone.png");
-    t.iron_ore   = LoadTexture(renderer, t.none, "iron_ore",   "resources/textures/iron_ore.png");
-    t.iron_plate = LoadTexture(renderer, t.none, "iron_plate", "resources/textures/iron_plate.png");
-    t.coal       = LoadTexture(renderer, t.none, "coal",       "resources/textures/coal.png");
-    t.furnace    = LoadTexture(renderer, t.none, "furnace",    "resources/textures/furnace.png");
-    t.drill      = LoadTexture(renderer, t.none, "drill",      "resources/textures/drill.png");
-    t.conveyor   = LoadTexture(renderer, t.none, "conveyor",   "resources/textures/conveyor.png");
+    t.ice             = LoadTexture(renderer, t.none, "ice",             "resources/textures/ice.png");
+    t.snow            = LoadTexture(renderer, t.none, "snow",            "resources/textures/snow.png");
+    t.stone           = LoadTexture(renderer, t.none, "stone",           "resources/textures/stone.png");
+    t.iron_ore        = LoadTexture(renderer, t.none, "iron_ore",        "resources/textures/iron_ore.png");
+    t.iron_plate      = LoadTexture(renderer, t.none, "iron_plate",      "resources/textures/iron_plate.png");
+    t.iron_gear_wheel = LoadTexture(renderer, t.none, "iron_gear_wheel", "resources/textures/iron_gear_wheel.png");
+    t.coal            = LoadTexture(renderer, t.none, "coal",            "resources/textures/coal.png");
+    t.furnace         = LoadTexture(renderer, t.none, "furnace",         "resources/textures/furnace.png");
+    t.drill           = LoadTexture(renderer, t.none, "drill",           "resources/textures/drill.png");
+    t.conveyor        = LoadTexture(renderer, t.none, "conveyor",        "resources/textures/conveyor.png");
 
     // ui
     t.slot          = LoadTexture(renderer, t.none, "slot",          "resources/textures/slot.png");

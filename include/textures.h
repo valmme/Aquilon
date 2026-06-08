@@ -13,6 +13,7 @@ struct Textures {
     SDL_Texture* stone;
     SDL_Texture* iron_ore;
     SDL_Texture* iron_plate;
+    SDL_Texture* iron_gear_wheel;
     SDL_Texture* coal;
 
     SDL_Texture* furnace;
