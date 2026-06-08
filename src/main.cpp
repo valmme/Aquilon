@@ -820,12 +820,24 @@ int main() {
             TextRenderer::DrawText(renderer, draw_font, title_x, title_y, game_title, {255, 255, 255, 255});
 
             char version_text[128];
-            snprintf(version_text, sizeof(version_text), "v%s build %s (%s)", GAME_VERSION, BUILD_NUMBER, BUILD_DATE);
+            snprintf(version_text, sizeof(version_text), "v%s", GAME_VERSION);
             int version_w, version_h;
             TTF_GetStringSize(menu_font.get(), version_text, 0, &version_w, &version_h);
             float version_x = 10.0f;
             float version_y = win_h - version_h - 10.0f;
             TextRenderer::DrawText(renderer, menu_font.get(), version_x, version_y, version_text, {150, 150, 150, 255});
+
+            char build_number_text[128];
+            snprintf(build_number_text, sizeof(build_number_text), "Build: %s", BUILD_NUMBER);
+            int build_number_w, build_number_h;
+            TTF_GetStringSize(menu_font.get(), build_number_text, 0, &build_number_w, &build_number_h);
+            TextRenderer::DrawText(renderer, menu_font.get(), (float)win_w - build_number_w - 10.0f, win_h - build_number_h - 10.0f - (float)TTF_GetFontHeight(menu_font.get()), build_number_text, {150, 150, 150, 255});
+
+            char build_date_text[128];
+            snprintf(build_date_text, sizeof(build_date_text), "%s", BUILD_DATE);
+            int build_date_w, build_date_h;
+            TTF_GetStringSize(menu_font.get(), build_date_text, 0, &build_date_w, &build_date_h);
+            TextRenderer::DrawText(renderer, menu_font.get(), (float)win_w - build_date_w - 10.0f, win_h - build_date_h - 10.0f, build_date_text, {150, 150, 150, 255});
         }
 
 
