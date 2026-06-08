@@ -97,7 +97,7 @@ void CraftingSystem::initialize_recipes(Textures* tex) {
         3.0f,
         ItemType::DRILL,
         {
-            { ItemType::IRON_PLATE, 3 }, { ItemType::FURNACE, 1 }
+            { ItemType::IRON_PLATE, 3 }, { ItemType::IRON_GEAR_WHEEL, 3 }, { ItemType::FURNACE, 1 }
         }
     });
 }
