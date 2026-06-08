@@ -189,6 +189,27 @@ bool WriteDefaultConfig(const std::string& path) {
     file << AppConfigToText(defaults);
     return static_cast<bool>(file);
 }
+} // namespace
+
+bool SaveAppConfig(const std::string& path, const AppConfig& config) {
+    std::ofstream file(path, std::ios::trunc);
+    if (!file.is_open()) {
+        Logger::Log("SYSTEM", Logger::Level::Error,
+                    "Could not open config file '%s' for writing.",
+                    path.c_str());
+        return false;
+    }
+
+    file << AppConfigToText(config);
+    if (file.fail()) {
+        Logger::Log("SYSTEM", Logger::Level::Error,
+                    "Failed to write config to '%s'.",
+                    path.c_str());
+        return false;
+    }
+
+    Logger::Log("SYSTEM", Logger::Level::Info, "Saved config to '%s'.", path.c_str());
+    return true;
 }
 
 bool LoadAppConfig(const std::string& path, AppConfig& config) {

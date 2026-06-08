@@ -383,6 +383,7 @@ int main() {
 
     back_to_menu_btn.on_click = [&]() {
         in_settings = false;
+        SaveAppConfig(config_path, config);
         main_window = setup_menu_window();
     };
 
@@ -846,6 +847,7 @@ int main() {
 
     Logger::Log("APPLICATION", Logger::Level::Info, "Leaving main loop.");
 
+    SaveAppConfig(config_path, config);
     FreeTextures(tex);
     Logger::Log("APPLICATION", Logger::Level::Info, "Released textures.");
 

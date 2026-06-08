@@ -47,5 +47,6 @@ struct AppConfig {
 std::string KeyBindToText(const KeyBind& bind);
 bool KeyBindMatches(const KeyBind& bind, SDL_Keycode key);
 bool LoadAppConfig(const std::string& path, AppConfig& config);
+bool SaveAppConfig(const std::string& path, const AppConfig& config);
 
 #endif // AQUILON_CONFIG_H
