@@ -1,6 +1,7 @@
 #include "gui.h"
 #include "textrenderer.h"
 #include "logger.h"
+#include <algorithm>
 #include <cmath>
 
 GUIButton::GUIButton(SDL_FRect rect, const std::string& label)
@@ -11,26 +12,32 @@ bool GUIButton::IsMouseOver(float mouse_x, float mouse_y) const {
            mouse_y >= rect.y && mouse_y <= rect.y + rect.h;
 }
 
-void GUIButton::HandleMouseDown(float mouse_x, float mouse_y) {
+bool GUIButton::HandleMouseDown(float mouse_x, float mouse_y) {
     if (IsMouseOver(mouse_x, mouse_y)) {
         pressed = true;
+        return true;
     }
+    return false;
 }
 
-void GUIButton::HandleMouseUp(float mouse_x, float mouse_y) {
+bool GUIButton::HandleMouseUp(float mouse_x, float mouse_y) {
+    bool consumed = false;
     if (pressed && IsMouseOver(mouse_x, mouse_y)) {
         if (on_click) {
             on_click();
         }
+        consumed = true;
     }
     pressed = false;
+    return consumed;
 }
 
-void GUIButton::HandleMouseMove(float mouse_x, float mouse_y) {
+bool GUIButton::HandleMouseMove(float mouse_x, float mouse_y) {
     hovered = IsMouseOver(mouse_x, mouse_y);
     if (!hovered) {
         pressed = false;
     }
+    return hovered;
 }
 
 SDL_Color GUIButton::GetBackgroundColor() const {
@@ -93,15 +100,18 @@ void GUIButton::Draw(SDL_Renderer* renderer, TTF_Font* font) {
 GUICheckbox::GUICheckbox(SDL_FRect rect, const std::string& label, bool initial)
     : rect(rect), label(label), checked(initial), hovered(false), font_scale(1.0f), last_ticks(0) {}
 
-void GUICheckbox::HandleMouseDown(float mx, float my) {
+bool GUICheckbox::HandleMouseDown(float mx, float my) {
     if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
         checked = !checked;
         if (on_change) on_change(checked);
+        return true;
     }
+    return false;
 }
 
-void GUICheckbox::HandleMouseMove(float mx, float my) {
+bool GUICheckbox::HandleMouseMove(float mx, float my) {
     hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
+    return hovered;
 }
 
 void GUICheckbox::Draw(SDL_Renderer* renderer, TTF_Font* font) {
@@ -144,20 +154,25 @@ void GUISlider::UpdateValueFromMouse(float mx) {
     if (on_change) on_change(value);
 }
 
-void GUISlider::HandleMouseDown(float mx, float my) {
+bool GUISlider::HandleMouseDown(float mx, float my) {
     if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
         dragging = true;
         UpdateValueFromMouse(mx);
+        return true;
     }
+    return false;
 }
 
-void GUISlider::HandleMouseUp(float mx, float my) {
+bool GUISlider::HandleMouseUp(float mx, float my) {
+    bool was_dragging = dragging;
     dragging = false;
+    return was_dragging;
 }
 
-void GUISlider::HandleMouseMove(float mx, float my) {
+bool GUISlider::HandleMouseMove(float mx, float my) {
     hovered = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
     if (dragging) UpdateValueFromMouse(mx);
+    return hovered || dragging;
 }
 
 void GUISlider::Draw(SDL_Renderer* renderer, TTF_Font* font) {
@@ -190,41 +205,92 @@ void GUISlider::Draw(SDL_Renderer* renderer, TTF_Font* font) {
 }
 
 GUICombo::GUICombo(SDL_FRect rect, const std::string& label, const std::vector<std::string>& options, int initial)
-    : rect(rect), label(label), options(options), selected_index(initial), expanded(false), hovered(false), font_scale(1.0f), last_ticks(0) {}
+    : rect(rect), label(label), options(options), selected_index(initial),
+      expanded(false), hovered(false), scroll_index(0), max_visible_items(5),
+      dragging_scroll(false), font_scale(1.0f), last_ticks(0), scroll_handle_rect({}), drag_offset_y(0.0f) {}
 
 SDL_FRect GUICombo::GetOptionRect(int index) const {
     return { rect.x, rect.y + rect.h + (float)index * rect.h, rect.w, rect.h };
 }
 
-void GUICombo::HandleMouseDown(float mx, float my) {
+bool GUICombo::HandleMouseDown(float mx, float my) {
     if (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h) {
         expanded = !expanded;
-        return;
+        return true;
     }
 
     if (expanded) {
+        if (options.size() > (size_t)max_visible_items) {
+            if (mx >= scroll_handle_rect.x && mx <= scroll_handle_rect.x + scroll_handle_rect.w &&
+                my >= scroll_handle_rect.y && my <= scroll_handle_rect.y + scroll_handle_rect.h) {
+                dragging_scroll = true;
+                float track_h = GetScrollbarRect().h;
+                float handle_h = std::max(10.0f, (float)max_visible_items / (float)options.size() * track_h);
+                float scroll_pct = (float)scroll_index / (float)(options.size() - max_visible_items);
+                float handle_y_start = GetScrollbarRect().y + (track_h - handle_h) * scroll_pct;
+                drag_offset_y = my - handle_y_start;
+                return true;
+            }
+        }
+
         for (int i = 0; i < (int)options.size(); ++i) {
-            SDL_FRect opt_rect = GetOptionRect(i);
+            if (i < scroll_index || i >= scroll_index + max_visible_items) continue;
+
+            SDL_FRect opt_rect = { rect.x, rect.y + rect.h + (float)(i - scroll_index) * rect.h, rect.w, rect.h };
             if (mx >= opt_rect.x && mx <= opt_rect.x + opt_rect.w && my >= opt_rect.y && my <= opt_rect.y + opt_rect.h) {
                 selected_index = i;
                 expanded = false;
                 if (on_change) on_change(selected_index);
-                return;
+                return true;
             }
         }
         expanded = false;
+        return true;
+    }
+    return false;
+}
+
+bool GUICombo::HandleMouseUp(float mx, float my) {
+    bool was_dragging = dragging_scroll;
+    dragging_scroll = false;
+    return was_dragging;
+}
+
+void GUICombo::HandleMouseWheel(float y) {
+    if (expanded && options.size() > (size_t)max_visible_items) {
+        int max_scroll_index = (int)options.size() - max_visible_items;
+        if (y > 0) scroll_index = std::max(0, scroll_index - 1);
+        else if (y < 0) scroll_index = std::min(max_scroll_index, scroll_index + 1);
     }
 }
 
-void GUICombo::HandleMouseMove(float mx, float my) {
+bool GUICombo::HandleMouseMove(float mx, float my) {
     bool over_main = (mx >= rect.x && mx <= rect.x + rect.w && my >= rect.y && my <= rect.y + rect.h);
     bool over_options = false;
     if (expanded) {
         float total_h = (float)options.size() * rect.h;
         over_options = (mx >= rect.x && mx <= rect.x + rect.w && 
                         my >= rect.y + rect.h && my <= rect.y + rect.h + total_h);
+
+        if (dragging_scroll) {
+            SDL_FRect scroll_track = GetScrollbarRect();
+            float track_h = scroll_track.h;
+            float handle_h = std::max(10.0f, (float)max_visible_items / (float)options.size() * track_h);
+
+            float new_handle_y = my - drag_offset_y;
+            float min_handle_y = scroll_track.y;
+            float max_handle_y = scroll_track.y + track_h - handle_h;
+
+            new_handle_y = std::clamp(new_handle_y, min_handle_y, max_handle_y);
+
+            float scroll_pct = (new_handle_y - scroll_track.y) / (track_h - handle_h);
+            int max_scroll_index = (int)options.size() - max_visible_items;
+            scroll_index = std::clamp((int)(scroll_pct * max_scroll_index), 0, max_scroll_index);
+            return true;
+        }
     }
     hovered = over_main || over_options;
+    return hovered;
 }
 
 SDL_FRect GUICombo::GetScrollbarRect() const {
@@ -298,9 +364,9 @@ void GUICombo::Draw(SDL_Renderer* renderer, TTF_Font* font) {
             float scroll_pct = (float)scroll_index / (float)(options.size() - max_visible_items);
             float handle_y = scroll_track.y + (track_h - handle_h) * scroll_pct;
 
-            SDL_FRect scroll_handle = { scroll_track.x + 2, handle_y + 2, scroll_track.w - 4, handle_h - 4 };
+            scroll_handle_rect = { scroll_track.x + 2, handle_y + 2, scroll_track.w - 4, handle_h - 4 };
             SDL_SetRenderDrawColor(renderer, 220, 196, 134, 255);
-            SDL_RenderFillRect(renderer, &scroll_handle);
+            SDL_RenderFillRect(renderer, &scroll_handle_rect);
         }
     }
 }

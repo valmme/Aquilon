@@ -20,9 +20,9 @@ public:
     GUIButton(SDL_FRect rect, const std::string& label);
     
     bool IsMouseOver(float mouse_x, float mouse_y) const;
-    void HandleMouseDown(float mouse_x, float mouse_y);
-    void HandleMouseUp(float mouse_x, float mouse_y);
-    void HandleMouseMove(float mouse_x, float mouse_y);
+    bool HandleMouseDown(float mouse_x, float mouse_y);
+    bool HandleMouseUp(float mouse_x, float mouse_y);
+    bool HandleMouseMove(float mouse_x, float mouse_y);
     void Draw(SDL_Renderer* renderer, TTF_Font* font);
     
 private:
@@ -41,8 +41,8 @@ public:
     std::function<void(bool)> on_change;
 
     GUICheckbox(SDL_FRect rect, const std::string& label, bool initial = false);
-    void HandleMouseDown(float mx, float my);
-    void HandleMouseMove(float mx, float my);
+    bool HandleMouseDown(float mx, float my);
+    bool HandleMouseMove(float mx, float my);
     void Draw(SDL_Renderer* renderer, TTF_Font* font);
 };
 
@@ -58,9 +58,9 @@ public:
     std::function<void(float)> on_change;
 
     GUISlider(SDL_FRect rect, const std::string& label, float initial = 0.5f);
-    void HandleMouseDown(float mx, float my);
-    void HandleMouseUp(float mx, float my);
-    void HandleMouseMove(float mx, float my);
+    bool HandleMouseDown(float mx, float my);
+    bool HandleMouseUp(float mx, float my);
+    bool HandleMouseMove(float mx, float my);
     void Draw(SDL_Renderer* renderer, TTF_Font* font);
 
 private:
@@ -83,15 +83,17 @@ public:
     std::function<void(int)> on_change;
 
     GUICombo(SDL_FRect rect, const std::string& label, const std::vector<std::string>& options, int initial = 0);
-    void HandleMouseDown(float mx, float my);
-    void HandleMouseUp(float mx, float my);
+    bool HandleMouseDown(float mx, float my);
+    bool HandleMouseUp(float mx, float my);
     void HandleMouseWheel(float y);
-    void HandleMouseMove(float mx, float my);
+    bool HandleMouseMove(float mx, float my);
     void Draw(SDL_Renderer* renderer, TTF_Font* font);
 
 private:
     SDL_FRect GetOptionRect(int index) const;
     SDL_FRect GetScrollbarRect() const;
+    SDL_FRect scroll_handle_rect;
+    float drag_offset_y;
 };
 
 class GUIWindow {

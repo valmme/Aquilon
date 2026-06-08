@@ -230,6 +230,36 @@ int main() {
     GUIButton settings_button({ 0, 0, 200, 45 }, Localize("Settings"));
     GUIButton exit_button({ 0, 0, 200, 45 }, Localize("Exit"));
 
+    std::vector<std::string> backends = {"auto", "vulkan", "opengl", "direct3d11", "direct3d12", "metal", "software"};
+    int initial_backend = 0;
+    for (int i = 0; i < (int)backends.size(); ++i) {
+        if (config.renderer_backend == backends[i]) {
+            initial_backend = i;
+            break;
+        }
+    }
+    GUICombo backend_combo({ 0, 0, 200, 35 }, Localize("Backend"), backends, initial_backend);
+    backend_combo.max_visible_items = 5;
+    backend_combo.on_change = [&](int idx) {
+        config.renderer_backend = (backends[idx] == "auto") ? "" : backends[idx];
+    };
+
+    GUICheckbox vsync_checkbox({ 0, 0, 200, 30 }, Localize("VSync"), config.vsync_enabled);
+    vsync_checkbox.on_change = [&](bool val) {
+        config.vsync_enabled = val;
+        SDL_SetRenderVSync(renderer, config.vsync_enabled ? 1 : 0);
+    };
+
+    GUISlider music_slider({ 0, 0, 200, 40 }, Localize("Music"), 1.0f);
+    music_slider.on_change = [&](float val) {
+        audio.SetMusicVolume((int)(val * 128));
+    };
+
+    GUISlider sfx_slider({ 0, 0, 200, 40 }, Localize("SFX"), 1.0f);
+    sfx_slider.on_change = [&](float val) {
+        audio.SetSFXVolume((int)(val * 128));
+    };
+
     GUIWindow* main_window = nullptr;
     auto setup_menu_window = [&]() {
         const std::string menu_title = Localize("Main Menu");
@@ -263,62 +293,35 @@ int main() {
     GUIButton controls_cat_btn({ 0, 0, 200, 45 }, Localize("Controls"));
     GUIButton back_to_menu_btn({ 0, 0, 200, 45 }, Localize("Back"));
 
-    GUIButton vsync_btn({ 0, 0, 200, 45 }, "");
-    GUIButton music_btn({ 0, 0, 200, 45 }, "");
-    GUIButton sfx_btn({ 0, 0, 200, 45 }, "");
     GUIButton back_to_cats_btn({ 0, 0, 200, 45 }, Localize("Back"));
-
-    auto update_settings_labels = [&]() {
-        vsync_btn.label = std::string(Localize("VSync")) + ": " + (config.vsync_enabled ? "ON" : "OFF");
-        music_btn.label = std::string(Localize("Music")) + ": " + std::to_string(music_vol_idx * 10) + "%";
-        sfx_btn.label = std::string(Localize("SFX")) + ": " + std::to_string(sfx_vol_idx * 10) + "%";
-    };
 
     std::function<GUIWindow*()> setup_settings_categories_window;
 
-    vsync_btn.on_click = [&]() {
-        config.vsync_enabled = !config.vsync_enabled;
-        SDL_SetRenderVSync(renderer, config.vsync_enabled ? 1 : 0);
-        update_settings_labels();
-    };
-
-    music_btn.on_click = [&]() {
-        music_vol_idx = (music_vol_idx + 1) % 11;
-        audio.SetMusicVolume((music_vol_idx * 128) / 10);
-        update_settings_labels();
-    };
-
-    sfx_btn.on_click = [&]() {
-        sfx_vol_idx = (sfx_vol_idx + 1) % 11;
-        audio.SetSFXVolume((sfx_vol_idx * 128) / 10);
-        update_settings_labels();
-    };
-
     auto setup_graphics_window = [&]() {
-        update_settings_labels();
-        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 80, 250, 160 }, Localize("Settings"));
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 120, 250, 240 }, Localize("Settings"));
         w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
             float start_y = content.y + 20.0f;
             float center_x = content.x + (content.w - 200.0f) * 0.5f;
-            vsync_btn.rect = { center_x, start_y, 200, 45 };
-            back_to_cats_btn.rect = { center_x, start_y + 55, 200, 45 };
-            vsync_btn.Draw(r, menu_font.get());
+            backend_combo.rect = { center_x, start_y, 200, 35 };
+            vsync_checkbox.rect = { center_x, start_y + 50, 200, 30 };
+            back_to_cats_btn.rect = { center_x, start_y + 130, 200, 45 };
+            vsync_checkbox.Draw(r, menu_font.get());
             back_to_cats_btn.Draw(r, menu_font.get());
+            backend_combo.Draw(r, menu_font.get());
         });
         return w;
     };
 
     auto setup_audio_window = [&]() {
-        update_settings_labels();
-        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 110, 250, 220 }, Localize("Settings"));
+        GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 120, 250, 240 }, Localize("Settings"));
         w->SetContentDrawCallback([&](SDL_Renderer* r, const SDL_FRect& content) {
             float start_y = content.y + 20.0f;
             float center_x = content.x + (content.w - 200.0f) * 0.5f;
-            music_btn.rect = { center_x, start_y, 200, 45 };
-            sfx_btn.rect = { center_x, start_y + 55, 200, 45 };
-            back_to_cats_btn.rect = { center_x, start_y + 110, 200, 45 };
-            music_btn.Draw(r, menu_font.get());
-            sfx_btn.Draw(r, menu_font.get());
+            music_slider.rect = { center_x, start_y, 200, 40 };
+            sfx_slider.rect = { center_x, start_y + 60, 200, 40 };
+            back_to_cats_btn.rect = { center_x, start_y + 130, 200, 45 };
+            music_slider.Draw(r, menu_font.get());
+            sfx_slider.Draw(r, menu_font.get());
             back_to_cats_btn.Draw(r, menu_font.get());
         });
         return w;
@@ -342,7 +345,6 @@ int main() {
 
     setup_settings_categories_window = [&]() {
         settings_state = SettingsState::Categories;
-        update_settings_labels();
         GUIWindow* w = gui_engine.CreateWindow(SDL_FRect{ (float)win_w / 2 - 125, (float)win_h / 2 - 140, 250, 280 }, Localize("Settings"));
         w->SetChromeVisible(false);
         
@@ -545,75 +547,85 @@ int main() {
             bool gui_consumed = gui_engine.HandleEvent(e);
             main_window = gui_engine.GetWindow();
 
+            bool event_handled_by_gui_element = false;
+
             if (state == GameState::Menu && !gui_consumed) {
                 float mx, my;
                 SDL_GetMouseState(&mx, &my);
                 if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_LEFT) {
                     if (!in_settings) {
-                        play_button.HandleMouseDown(mx, my);
-                        settings_button.HandleMouseDown(mx, my);
-                        exit_button.HandleMouseDown(mx, my);
+                        if (play_button.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && settings_button.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && exit_button.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
                     } else {
                         if (settings_state == SettingsState::Categories) {
-                            graphics_cat_btn.HandleMouseDown(mx, my);
-                            audio_cat_btn.HandleMouseDown(mx, my);
-                            controls_cat_btn.HandleMouseDown(mx, my);
-                            back_to_menu_btn.HandleMouseDown(mx, my);
+                            if (graphics_cat_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && audio_cat_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && controls_cat_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_menu_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Graphics) {
-                            vsync_btn.HandleMouseDown(mx, my);
-                            back_to_cats_btn.HandleMouseDown(mx, my);
+                            if (backend_combo.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && vsync_checkbox.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Audio) {
-                            music_btn.HandleMouseDown(mx, my);
-                            sfx_btn.HandleMouseDown(mx, my);
-                            back_to_cats_btn.HandleMouseDown(mx, my);
+                            if (music_slider.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && sfx_slider.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Controls) {
-                            back_to_cats_btn.HandleMouseDown(mx, my);
+                            if (back_to_cats_btn.HandleMouseDown(mx, my)) event_handled_by_gui_element = true;
                         }
                     }
                 } else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT) {
                     if (!in_settings) {
-                        play_button.HandleMouseUp(mx, my);
-                        settings_button.HandleMouseUp(mx, my);
-                        exit_button.HandleMouseUp(mx, my);
+                        if (play_button.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && settings_button.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && exit_button.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
                     } else {
                         if (settings_state == SettingsState::Categories) {
-                            graphics_cat_btn.HandleMouseUp(mx, my);
-                            audio_cat_btn.HandleMouseUp(mx, my);
-                            controls_cat_btn.HandleMouseUp(mx, my);
-                            back_to_menu_btn.HandleMouseUp(mx, my);
+                            if (graphics_cat_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && audio_cat_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && controls_cat_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_menu_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Graphics) {
-                            vsync_btn.HandleMouseUp(mx, my);
-                            back_to_cats_btn.HandleMouseUp(mx, my);
+                            if (backend_combo.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Audio) {
-                            music_btn.HandleMouseUp(mx, my);
-                            sfx_btn.HandleMouseUp(mx, my);
-                            back_to_cats_btn.HandleMouseUp(mx, my);
+                            if (music_slider.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && sfx_slider.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
                         } else if (settings_state == SettingsState::Controls) {
-                            back_to_cats_btn.HandleMouseUp(mx, my);
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseUp(mx, my)) event_handled_by_gui_element = true;
                         }
                     }
                 } else if (e.type == SDL_EVENT_MOUSE_MOTION) {
                     if (!in_settings) {
-                        play_button.HandleMouseMove(mx, my);
-                        settings_button.HandleMouseMove(mx, my);
-                        exit_button.HandleMouseMove(mx, my);
+                        if (play_button.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && settings_button.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                        if (!event_handled_by_gui_element && exit_button.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
                     } else {
                         if (settings_state == SettingsState::Categories) {
-                            graphics_cat_btn.HandleMouseMove(mx, my);
-                            audio_cat_btn.HandleMouseMove(mx, my);
-                            controls_cat_btn.HandleMouseMove(mx, my);
-                            back_to_menu_btn.HandleMouseMove(mx, my);
+                            if (graphics_cat_btn.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && audio_cat_btn.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && controls_cat_btn.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_menu_btn.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
                         } else {
-                            vsync_btn.HandleMouseMove(mx, my);
-                            music_btn.HandleMouseMove(mx, my);
-                            sfx_btn.HandleMouseMove(mx, my);
-                            back_to_cats_btn.HandleMouseMove(mx, my);
+                            if (backend_combo.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && vsync_checkbox.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && music_slider.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && sfx_slider.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
+                            if (!event_handled_by_gui_element && back_to_cats_btn.HandleMouseMove(mx, my)) event_handled_by_gui_element = true;
                         }
+                    }
+                }
+
+                if (state == GameState::Menu && in_settings && settings_state == SettingsState::Graphics) {
+                    if (!event_handled_by_gui_element) {
+                        backend_combo.HandleMouseWheel((float)e.wheel.y);
                     }
                 }
             }
 
-            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT && gui_consumed) {
+            if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && e.button.button == SDL_BUTTON_RIGHT && (gui_consumed || event_handled_by_gui_element)) {
                 player.stop_mining();
                 right_hold_blocked = true;
             }
