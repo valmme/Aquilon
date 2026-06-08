@@ -230,6 +230,7 @@ int main() {
     GUIButton settings_button({ 0, 0, 200, 45 }, Localize("Settings"));
     GUIButton exit_button({ 0, 0, 200, 45 }, Localize("Exit"));
 
+    std::vector<std::string> display_backends = {"Auto", "Vulkan", "OpenGL", "DirectX 11", "DirectX 12", "Metal", "Software"};
     std::vector<std::string> backends = {"auto", "vulkan", "opengl", "direct3d11", "direct3d12", "metal", "software"};
     int initial_backend = 0;
     for (int i = 0; i < (int)backends.size(); ++i) {
@@ -238,7 +239,7 @@ int main() {
             break;
         }
     }
-    GUICombo backend_combo({ 0, 0, 200, 35 }, Localize("Backend"), backends, initial_backend);
+    GUICombo backend_combo({ 0, 0, 200, 35 }, Localize("Backend"), display_backends, initial_backend);
     backend_combo.max_visible_items = 5;
     backend_combo.on_change = [&](int idx) {
         config.renderer_backend = (backends[idx] == "auto") ? "" : backends[idx];
