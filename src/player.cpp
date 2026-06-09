@@ -23,6 +23,10 @@ void Player::handle_input(const SDL_Event& e) {
         if (KeyBindMatches(input.move_down, e.key.key)) down = true;
         if (KeyBindMatches(input.move_left, e.key.key)) left = true;
         if (KeyBindMatches(input.move_right, e.key.key)) right = true;
+
+        // need improvement for config
+        if (e.key.key == SDLK_Z) z_held = true;
+        if (e.key.key == SDLK_F) f_held = true;
     }
 
     if (e.type == SDL_EVENT_KEY_UP) {
@@ -30,6 +34,9 @@ void Player::handle_input(const SDL_Event& e) {
         if (KeyBindMatches(input.move_down, e.key.key)) down = false;
         if (KeyBindMatches(input.move_left, e.key.key)) left = false;
         if (KeyBindMatches(input.move_right, e.key.key)) right = false;
+
+        if (e.key.key == SDLK_Z) z_held = false;
+        if (e.key.key == SDLK_F) f_held = false;
     }
 }
 
@@ -169,6 +176,26 @@ void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera
     SDL_SetTextureColorMod(item->texture, 255, 255, 255);
 }
 
+void Player::handle_drop(Inventory& inv, float mw_x, float mw_y) {
+    if (!drop_system || !inv.cursor_item || inv.cursor_item->amount <= 0) return;
+
+    Item* dropped = inv.cursor_item->copy();
+    dropped->amount = 1;
+    drop_system->spawn(dropped, mw_x, mw_y);
+    inv.consume_cursor_item_one();
+}
+
+void Player::handle_pickup(Inventory& inv) {
+    if (!drop_system) return;
+
+    float cx = player.x + player.w * 0.5f;
+    float cy = player.y + player.h * 0.5f;
+
+    for (Item* i : drop_system->pickup_near(cx, cy, 42.0f)) {
+        inv.pick(i);
+    }
+}
+
 void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction) {
     if (!allow_world_interaction || inventory.open) return;
     if (e.type != SDL_EVENT_MOUSE_BUTTON_DOWN || e.button.button != SDL_BUTTON_LEFT) return;
@@ -207,12 +234,30 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
     inventory.consume_cursor_item_one();
 }
 
-void Player::update(float delta_time) {
+void Player::update(Inventory& inv, Camera cam, float delta_time, float mx, float my) {
+    float world_x = cam.x + mx / cam.zoom;
+    float world_y = cam.y + my / cam.zoom;
+
     if (up)    player.y -= speed * delta_time;
     if (down)  player.y += speed * delta_time;
     if (left)  player.x -= speed * delta_time;
     if (right) player.x += speed * delta_time;
 
+    if (z_held) {
+        drop_timer -= delta_time;
+        if (drop_timer <= 0.0f) {
+            handle_drop(inv, world_x, world_y);
+            drop_timer = DROP_INTERVAL;
+        }
+    }
+
+    else drop_timer = 0.0f;
+
+    if (f_held) {
+        handle_pickup(inv);
+        f_held = false;
+    }
+    
     update_animation(delta_time);
 }
 

@@ -4,7 +4,8 @@
 #include <SDL3/SDL.h>
 #include <vector>
 #include "item.h"
-#include "player.h"
+
+struct Camera;
 
 struct DroppedItem {
     Item* item = nullptr;
@@ -15,7 +16,7 @@ struct DroppedItem {
 class DroppedItemSystem {
 public:
     void spawn(Item* item, float world_x, float world_y);
-    void draw(SDL_Renderer* renderer, const Camera& cam) const;
+    void render(SDL_Renderer* renderer, const Camera& cam) const;
     std::vector<Item*> pickup_near(float world_x, float world_y, float radius = 48.0f);
 
 private:

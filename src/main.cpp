@@ -154,6 +154,9 @@ int main() {
     Player player(config.input);
     Camera cam;
 
+    DroppedItemSystem drop_system;
+    player.drop_system = &drop_system;
+
     Inventory inv(gui_engine, tex, game_font.get(), config.input);
     CraftingSystem* crafting = new CraftingSystem(tex, game_font.get());
     FurnacePanel* furnace_panel = new FurnacePanel(tex, game_font.get());
@@ -449,6 +452,9 @@ int main() {
     });
 
     auto status_draw_callback = [&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+        float mouse_x = 0.0f, mouse_y = 0.0f;
+        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+
         SDL_Color panel_fill = {16, 17, 21, 255};
         SDL_SetRenderDrawColor(renderer, panel_fill.r, panel_fill.g, panel_fill.b, panel_fill.a);
         SDL_RenderFillRect(renderer, &content_rect);
@@ -471,6 +477,7 @@ int main() {
         const std::string player_label = Localize("Player");
         const std::string tile_label = Localize("Tile");
         const std::string camera_label = Localize("Camera");
+        const std::string cursor_label = Localize("Cursor");
         const std::string chunks_label = Localize("Chunks");
         const std::string log_level_label = Localize("Log level");
 
@@ -497,6 +504,10 @@ int main() {
         y += line_step;
 
         snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f zoom=%.2f", camera_label.c_str(), cam.x, cam.y, cam.zoom);
+        TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
+        y += line_step;
+
+        snprintf(line, sizeof(line), "%s: x=%.1f y=%.1f", cursor_label.c_str(), mouse_x, mouse_y);
         TextRenderer::DrawText(renderer, game_font.get(), left, y, line, muted);
         y += line_step;
 
@@ -540,6 +551,9 @@ int main() {
         char title[128];
         snprintf(title, sizeof(title), "Aquilon - FPS: %.1f", fps);
         SDL_SetWindowTitle(window, title);
+
+        float mouse_x = 0.0f, mouse_y = 0.0f;
+        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_EVENT_QUIT) {
@@ -672,7 +686,7 @@ int main() {
         }
 
         if (state == GameState::Playing) {
-            player.update(delta_time);
+            player.update(inv, cam, delta_time, mouse_x, mouse_y);
 
             int player_tile_x = (int)player.player.x / TILE_SIZE;
             int player_tile_y = (int)player.player.y / TILE_SIZE;
@@ -697,9 +711,6 @@ int main() {
             
             world.update((int)cam.x / TILE_SIZE, (int)cam.y / TILE_SIZE, config.chunk_distance);
         }
-
-        float mouse_x = 0.0f, mouse_y = 0.0f;
-        SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         furnace_panel->update(delta_time);
         drill_panel->update(delta_time);
@@ -806,6 +817,7 @@ int main() {
 
         if (state == GameState::Playing) {
             player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
+            drop_system.render(renderer, cam);
             player.render(renderer, cam);
             player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
         }

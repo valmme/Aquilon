@@ -6,8 +6,11 @@
 #include "config.h"
 #include "gen/tile.h"
 #include "inv/item.h"
+#include "inv/dropped_item.h"
 #include <vector>
 #include <functional>
+
+#define DROP_INTERVAL 0.1f
 
 class World;
 class Inventory;
@@ -93,8 +96,10 @@ public:
     explicit Player(const InputConfig& input = InputConfig{});
 
     void handle_input(const SDL_Event& e);
+    void handle_drop(Inventory& inv, float mw_x, float mw_y);
+    void handle_pickup(Inventory& inv);
     void handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction);
-    void update(float delta_time);
+    void update(Inventory& inv, Camera cam, float delta_time, float mx, float my);
     void update_placed_drills(float delta_time, World& world, Inventory& inventory, const Textures& textures);
     void render(SDL_Renderer* renderer, const Camera& cam);
     bool is_mining() const;
@@ -111,11 +116,15 @@ public:
 
     SDL_FRect player;
 
+    DroppedItemSystem* drop_system = nullptr;
+
 private:
     InputConfig input;
     float speed;
+    float drop_timer;
 
     bool up, down, left, right;
+    bool z_held, f_held;
 
     int anim_frame;
     float anim_timer;
