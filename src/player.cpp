@@ -255,7 +255,6 @@ void Player::update(Inventory& inv, Camera cam, float delta_time, float mx, floa
 
     if (f_held) {
         handle_pickup(inv);
-        f_held = false;
     }
     
     update_animation(delta_time);
