@@ -134,7 +134,15 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
                 }
 
                 if (Item* drop = make_drop_for_tile(tile, textures)) {
-                    inventory.pick(drop);
+                    if (drop_system) {
+                        float cx = (obj.x + obj.size.x * 0.5f) * 32.0f;
+                        float cy = (obj.y + obj.size.y * 0.5f) * 32.0f;
+                        drop_system->spawn(drop, cx, cy);
+                    } 
+                    
+                    else {
+                        inventory.pick(drop);
+                    }
                 }
 
                 tile.yield -= 1;
