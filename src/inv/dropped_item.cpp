@@ -11,8 +11,8 @@ void DroppedItemSystem::spawn(Item* item, float world_x, float world_y) {
 
     if (!find_free_slot(tx, ty, sx, sy)) {
         const int offsets[][2] {
-            {1,0},{-1,0},{0,1},{0,-1},
-            {1,1},{-1,1},{1,1},{-1,-1}
+            {1,0},{-1,0},{0, 1},{0 ,-1},
+            {1,1},{-1,1},{1,-1},{-1,-1}
         };
         
         bool found = false;
@@ -40,6 +40,7 @@ std::vector<Item*> DroppedItemSystem::pickup_near(float world_x, float world_y, 
 
         if (dx*dx + dy*dy <= radius*radius) {
             results.push_back(it->item);
+            it->item = nullptr;
             it = dropped.erase(it);
         }
 

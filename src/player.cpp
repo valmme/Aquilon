@@ -44,7 +44,10 @@ void Player::handle_input(const SDL_Event& e) {
 void Player::handle_drop(Inventory& inv, float mw_x, float mw_y) {
     if (!inv.cursor_item || !drop_system) return;
 
-    drop_system->spawn(inv.cursor_item->copy(), mw_x, mw_y);
+    Item* single = inv.cursor_item->copy();
+    single->amount = 1;
+
+    drop_system->spawn(single, mw_x, mw_y);
     inv.consume_cursor_item_one();
 }
 
