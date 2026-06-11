@@ -27,6 +27,7 @@ public:
     void spawn(Item* item, float world_x, float world_y);
     void render(SDL_Renderer* renderer, const Camera& cam) const;
     std::vector<Item*> pickup_near(float world_x, float world_y, float radius = 48.0f);
+    std::vector<DroppedItem>& get_items() { return dropped; }
 
 private:
     std::vector<DroppedItem> dropped;

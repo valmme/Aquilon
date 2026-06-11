@@ -15,6 +15,7 @@ Player::Player(const InputConfig& input) : input(input) {
     anim_frame = 0;
     anim_timer = 0;
     anim_speed = 0.1f;
+    placement_rotation = 0.0f;
 }
 
 void Player::handle_input(const SDL_Event& e) {
@@ -24,9 +25,12 @@ void Player::handle_input(const SDL_Event& e) {
         if (KeyBindMatches(input.move_left, e.key.key)) left = true;
         if (KeyBindMatches(input.move_right, e.key.key)) right = true;
 
-        // need improvement for config
-        if (e.key.key == SDLK_Z) z_held = true;
-        if (e.key.key == SDLK_F) f_held = true;
+        if (KeyBindMatches(input.rotate_placement, e.key.key)) {
+            placement_rotation += 90.0f;
+            if (placement_rotation >= 360.0f) {
+                placement_rotation = 0.0f;
+            }
+        }
     }
 
     if (e.type == SDL_EVENT_KEY_UP) {
@@ -34,10 +38,14 @@ void Player::handle_input(const SDL_Event& e) {
         if (KeyBindMatches(input.move_down, e.key.key)) down = false;
         if (KeyBindMatches(input.move_left, e.key.key)) left = false;
         if (KeyBindMatches(input.move_right, e.key.key)) right = false;
-
-        if (e.key.key == SDLK_Z) z_held = false;
-        if (e.key.key == SDLK_F) f_held = false;
     }
+}
+
+void Player::handle_drop(Inventory& inv, float mw_x, float mw_y) {
+    if (!inv.cursor_item || !drop_system) return;
+
+    drop_system->spawn(inv.cursor_item->copy(), mw_x, mw_y);
+    inv.consume_cursor_item_one();
 }
 
 bool Player::can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size) {
@@ -76,6 +84,21 @@ bool Player::can_place_item_at(ItemType type, World& world, int x, int y, vec2 s
     }
 
     return true;
+}
+
+void Player::update_conveyors(DroppedItemSystem& drop_system, float delta_time) {
+    for (auto& dropped : drop_system.get_items()) {
+        int tx = (int)std::floor(dropped.x / 32.0f);
+        int ty = (int)std::floor(dropped.y / 32.0f);
+        for (const auto& obj : placed_objects) {
+            if (obj.type == ItemType::CONVEYOR && obj.x == tx && obj.y == ty) {
+                float move_speed = 64.0f;
+                float rad = (obj.rotation - 90.0f) * (3.14159f / 180.0f);
+                dropped.x += std::cos(rad) * move_speed * delta_time;
+                dropped.y += std::sin(rad) * move_speed * delta_time;
+            }
+        }
+    }
 }
 
 void Player::update_placed_drills(float delta_time, World& world, Inventory& inventory, const Textures& textures) {
@@ -134,15 +157,7 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
                 }
 
                 if (Item* drop = make_drop_for_tile(tile, textures)) {
-                    if (drop_system) {
-                        float cx = (obj.x + obj.size.x * 0.5f) * 32.0f;
-                        float cy = (obj.y + obj.size.y * 0.5f) * 32.0f;
-                        drop_system->spawn(drop, cx, cy);
-                    } 
-                    
-                    else {
-                        inventory.pick(drop);
-                    }
+                    inventory.pick(drop);
                 }
 
                 tile.yield -= 1;
@@ -162,7 +177,7 @@ void Player::update_placed_drills(float delta_time, World& world, Inventory& inv
     }
 }
 
-void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) {
+void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam, const Item* item, float mouse_x, float mouse_y, bool can_place_here) const {
     if (!renderer || !item || !item->can_place || !item->texture) return;
 
     int tile_x = (int)std::floor((cam.x + mouse_x / cam.zoom) / 32.0f);
@@ -178,30 +193,10 @@ void Player::draw_placement_preview_texture(SDL_Renderer* renderer, const Camera
     SDL_SetTextureBlendMode(item->texture, SDL_BLENDMODE_BLEND);
     SDL_SetTextureAlphaMod(item->texture, can_place_here ? 120 : 80);
     SDL_SetTextureColorMod(item->texture, can_place_here ? 90 : 255, can_place_here ? 255 : 80, can_place_here ? 120 : 80);
-    SDL_RenderTexture(renderer, item->texture, nullptr, &dst);
+    SDL_RenderTextureRotated(renderer, item->texture, nullptr, &dst, (double)placement_rotation, nullptr, SDL_FLIP_NONE);
 
     SDL_SetTextureAlphaMod(item->texture, 255);
     SDL_SetTextureColorMod(item->texture, 255, 255, 255);
-}
-
-void Player::handle_drop(Inventory& inv, float mw_x, float mw_y) {
-    if (!drop_system || !inv.cursor_item || inv.cursor_item->amount <= 0) return;
-
-    Item* dropped = inv.cursor_item->copy();
-    dropped->amount = 1;
-    drop_system->spawn(dropped, mw_x, mw_y);
-    inv.consume_cursor_item_one();
-}
-
-void Player::handle_pickup(Inventory& inv) {
-    if (!drop_system) return;
-
-    float cx = player.x + player.w * 0.5f;
-    float cy = player.y + player.h * 0.5f;
-
-    for (Item* i : drop_system->pickup_near(cx, cy, 42.0f)) {
-        inv.pick(i);
-    }
 }
 
 void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction) {
@@ -237,34 +232,18 @@ void Player::handle_item_placement(const SDL_Event& e, const Camera& cam, Invent
     obj.y = click_tile_y;
     obj.size = dragged->size;
     obj.opens_inv = dragged->opens_inv;
+    obj.rotation = placement_rotation;
 
     placed_objects.push_back(obj);
     inventory.consume_cursor_item_one();
 }
 
-void Player::update(Inventory& inv, Camera cam, float delta_time, float mx, float my) {
-    float world_x = cam.x + mx / cam.zoom;
-    float world_y = cam.y + my / cam.zoom;
-
+void Player::update(Inventory& inv, Camera& cam, float delta_time, float mx, float my) {
     if (up)    player.y -= speed * delta_time;
     if (down)  player.y += speed * delta_time;
     if (left)  player.x -= speed * delta_time;
     if (right) player.x += speed * delta_time;
 
-    if (z_held) {
-        drop_timer -= delta_time;
-        if (drop_timer <= 0.0f) {
-            handle_drop(inv, world_x, world_y);
-            drop_timer = DROP_INTERVAL;
-        }
-    }
-
-    else drop_timer = 0.0f;
-
-    if (f_held) {
-        handle_pickup(inv);
-    }
-    
     update_animation(delta_time);
 }
 
@@ -290,7 +269,7 @@ void Player::render_placed_objects(SDL_Renderer* renderer, const Camera& cam,
             obj.size.y * 32.0f
         );
 
-        SDL_RenderTexture(renderer, obj.texture, nullptr, &dst);
+        SDL_RenderTextureRotated(renderer, obj.texture, nullptr, &dst, (double)obj.rotation, nullptr, SDL_FLIP_NONE);
     }
 }
 

@@ -77,6 +77,7 @@ public:
         int x = 0;
         int y = 0;
         vec2 size = {1, 1};
+        float rotation = 0.0f;
         float mining_progress = 0.0f;
         int fuel_amount = 0;
         float fuel_remaining = 0.0f;
@@ -99,7 +100,8 @@ public:
     void handle_drop(Inventory& inv, float mw_x, float mw_y);
     void handle_pickup(Inventory& inv);
     void handle_item_placement(const SDL_Event& e, const Camera& cam, Inventory& inventory, World& world, bool allow_world_interaction);
-    void update(Inventory& inv, Camera cam, float delta_time, float mx, float my);
+    void update(Inventory& inv, Camera& cam, float delta_time, float mx, float my);
+    void update_conveyors(DroppedItemSystem& drop_system, float delta_time);
     void update_placed_drills(float delta_time, World& world, Inventory& inventory, const Textures& textures);
     void render(SDL_Renderer* renderer, const Camera& cam);
     bool is_mining() const;
@@ -117,6 +119,7 @@ public:
     SDL_FRect player;
 
     DroppedItemSystem* drop_system = nullptr;
+    float placement_rotation = 0.0f;
 
 private:
     InputConfig input;
@@ -138,9 +141,9 @@ private:
     static bool can_place_item_at(ItemType type, World& world, int x, int y, vec2 size, const std::vector<PlacedObject>& placed_objects);
     static Item* make_drop_for_tile(const Tile& tile, const Textures& textures);
     static bool can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size);
-    static void draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam,
-                                               const Item* item, float mouse_x, float mouse_y,
-                                               bool can_place_here);
+    void draw_placement_preview_texture(SDL_Renderer* renderer, const Camera& cam,
+                                        const Item* item, float mouse_x, float mouse_y,
+                                        bool can_place_here) const;
 };
 
 #endif // AQUILON_PLAYER_H

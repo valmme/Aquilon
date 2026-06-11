@@ -20,6 +20,8 @@ struct InputConfig {
     KeyBind inventory_close;
     KeyBind zoom_in;
     KeyBind zoom_out;
+    KeyBind drop_item;
+    KeyBind rotate_placement;
 };
 
 struct AppConfig {
@@ -40,6 +42,8 @@ struct AppConfig {
         input.inventory_close.keys = { SDLK_ESCAPE };
         input.zoom_in.keys = { SDLK_EQUALS, SDLK_KP_PLUS };
         input.zoom_out.keys = { SDLK_MINUS, SDLK_KP_MINUS };
+        input.drop_item.keys = { SDLK_Z };
+        input.rotate_placement.keys = { SDLK_R };
         return input;
     }();
 };

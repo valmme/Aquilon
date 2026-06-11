@@ -38,6 +38,7 @@ static const char* log_level_name(Logger::Level level) {
 }
 
 enum class GameState {
+    Loading,
     Menu,
     Playing
 };
@@ -128,81 +129,21 @@ int main() {
         Logger::Log("SYSTEM", Logger::Level::Info, "VSync %s.", config.vsync_enabled ? "enabled" : "disabled");
     }
 
-    Textures tex = LoadTextures(renderer);
-    Logger::Log("APPLICATION", Logger::Level::Info, "Loaded textures.");
-
+    Textures tex{};
     GUIEngine gui_engine(renderer);
-    Logger::Log("UI", Logger::Level::Info, "Initialized GUI engine.");
-
-    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> menu_font(
-        TTF_OpenFont("resources/fonts/arial.ttf", 20), &TTF_CloseFont
-    );
-    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> game_font(
-        TTF_OpenFont("resources/fonts/arial.ttf", 14), &TTF_CloseFont
-    );
-
-    if (!menu_font || !game_font) {
-        Logger::Log("UI", Logger::Level::Warn, "Fonts not found; UI text will not render properly.");
-    }
-
-    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> title_font(
-        TTF_OpenFont("resources/fonts/arial.ttf", 72), &TTF_CloseFont
-    );
-
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> menu_font(nullptr, &TTF_CloseFont);
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> game_font(nullptr, &TTF_CloseFont);
+    std::unique_ptr<TTF_Font, decltype(&TTF_CloseFont)> title_font(nullptr, &TTF_CloseFont);
 
     World world;
     Player player(config.input);
     Camera cam;
-
     DroppedItemSystem drop_system;
     player.drop_system = &drop_system;
-
-    Inventory inv(gui_engine, tex, game_font.get(), config.input);
-    CraftingSystem* crafting = new CraftingSystem(tex, game_font.get());
-    FurnacePanel* furnace_panel = new FurnacePanel(tex, game_font.get());
-    DrillPanel* drill_panel = new DrillPanel(tex, game_font.get());
-
-    furnace_panel->initialize_recipes();
-    initialize_items(tex);
-
-    inv.set_crafting_system(crafting);
-    inv.set_active_panel(crafting);
-
-    player.on_object_clicked = [&](const Player::PlacedObject& obj) {
-        if (obj.type == ItemType::FURNACE) {
-            drill_panel->set_target(nullptr);
-            inv.set_active_panel(furnace_panel);
-            if (!inv.open) {
-                inv.open = true;
-                inv.open_window();
-            }
-            return;
-        }
-
-        if (obj.type == ItemType::DRILL) {
-            drill_panel->set_target(const_cast<Player::PlacedObject*>(&obj));
-            inv.set_active_panel(drill_panel);
-            if (!inv.open) {
-                inv.open = true;
-                inv.open_window();
-            }
-            return;
-        }
-
-        if (!inv.open && obj.opens_inv) {
-            inv.open = true;
-            inv.open_window();
-        }
-    };
-
-    inv.pick(item_stack(Item::IRON_PLATE, 32));
-    inv.pick(item_stack(Item::COAL, 32));
-    inv.pick(item_stack(Item::STONE, 32));
-    inv.pick(item_stack(Item::CONVEYOR, 64));
-
-    crafting->initialize_recipes(&tex);
-
-    Logger::Log("GAMEPLAY", Logger::Level::Info, "Initialized world, player, and camera.");
+    std::unique_ptr<Inventory> inv;
+    CraftingSystem* crafting = nullptr;
+    FurnacePanel* furnace_panel = nullptr;
+    DrillPanel* drill_panel = nullptr;
 
     int win_w = 800, win_h = 600;
     SDL_GetWindowSize(window, &win_w, &win_h);
@@ -214,10 +155,12 @@ int main() {
 
     int initial_player_tile_x = (int)player.player.x / TILE_SIZE;
     int initial_player_tile_y = (int)player.player.y / TILE_SIZE;
-    world.update(initial_player_tile_x, initial_player_tile_y, config.chunk_distance);
 
     std::srand((unsigned int)std::time(nullptr));
-    GameState state = GameState::Menu;
+    GameState state = GameState::Loading;
+    int loading_step = 0;
+    const int TOTAL_LOADING_STEPS = 6;
+
     float fps = 0.0f;
     bool right_hold_blocked = false;
     float menu_cam_timer = 0.0f;
@@ -394,19 +337,20 @@ int main() {
         main_window = setup_settings_categories_window();
     };
 
-    main_window = setup_menu_window();
     GUIWindow* resource_panel = gui_engine.CreateInfoWindow(SDL_FRect{0, 0, 220, 110});
     GUIWindow* crafting_queue_window = gui_engine.CreateQueueWindow(SDL_FRect{10.0f, (float)win_h - 120.0f, 260.0f, 100.0f});
-    crafting_queue_window->SetVisible(false);
-    crafting_queue_window->SetBackgroundColor(SDL_Color{14, 15, 18, 230});
-    crafting_queue_window->SetBorderColor(SDL_Color{42, 46, 54, 255});
-    crafting_queue_window->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
-        if (crafting) crafting->draw_queue(renderer, game_font.get(), content_rect);
-    });
-    resource_panel->SetVisible(false);
-    resource_panel->SetBackgroundColor(SDL_Color{21, 24, 29, 245});
-    resource_panel->SetBorderColor(SDL_Color{66, 74, 86, 255});
-    resource_panel->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+    
+    auto setup_other_ui = [&]() {
+        crafting_queue_window->SetVisible(false);
+        crafting_queue_window->SetBackgroundColor(SDL_Color{14, 15, 18, 230});
+        crafting_queue_window->SetBorderColor(SDL_Color{42, 46, 54, 255});
+        crafting_queue_window->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
+            if (crafting) crafting->draw_queue(renderer, game_font.get(), content_rect);
+        });
+        resource_panel->SetVisible(false);
+        resource_panel->SetBackgroundColor(SDL_Color{21, 24, 29, 245});
+        resource_panel->SetBorderColor(SDL_Color{66, 74, 86, 255});
+        resource_panel->SetContentDrawCallback([&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         SDL_SetRenderDrawColor(renderer, 16, 17, 21, 255);
         SDL_RenderFillRect(renderer, &content_rect);
 
@@ -450,7 +394,8 @@ int main() {
 
         TextRenderer::DrawText(renderer, game_font.get(), left, y, Localize("Hold RMB to mine"), accent_color);
     });
-
+    };
+    
     auto status_draw_callback = [&](SDL_Renderer* renderer, const SDL_FRect& content_rect) {
         float mouse_x = 0.0f, mouse_y = 0.0f;
         SDL_MouseButtonFlags mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
@@ -541,6 +486,66 @@ int main() {
     Logger::Log("APPLICATION", Logger::Level::Info, "Entering main loop.");
 
     while (running) {
+        if (state == GameState::Loading) {
+            switch (loading_step) {
+                case 0:
+                    tex = LoadTextures(renderer);
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Step 0: Textures loaded.");
+                    break;
+                case 1:
+                    menu_font.reset(TTF_OpenFont("resources/fonts/arial.ttf", 20));
+                    game_font.reset(TTF_OpenFont("resources/fonts/arial.ttf", 14));
+                    title_font.reset(TTF_OpenFont("resources/fonts/arial.ttf", 72));
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Step 1: Fonts loaded.");
+                    break;
+                case 2:
+                    initialize_items(tex);
+                    crafting = new CraftingSystem(tex, game_font.get());
+                    furnace_panel = new FurnacePanel(tex, game_font.get());
+                    drill_panel = new DrillPanel(tex, game_font.get());
+                    furnace_panel->initialize_recipes();
+                    crafting->initialize_recipes(&tex);
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Step 2: Systems initialized.");
+                    break;
+                case 3:
+                    inv = std::make_unique<Inventory>(gui_engine, tex, game_font.get(), config.input);
+                    inv->set_crafting_system(crafting);
+                    inv->set_active_panel(crafting);
+                    player.on_object_clicked = [&](const Player::PlacedObject& obj) {
+                        if (obj.type == ItemType::FURNACE) {
+                            drill_panel->set_target(nullptr);
+                            inv->set_active_panel(furnace_panel);
+                            if (!inv->open) { inv->open = true; inv->open_window(); }
+                            return;
+                        }
+                        if (obj.type == ItemType::DRILL) {
+                            drill_panel->set_target(const_cast<Player::PlacedObject*>(&obj));
+                            inv->set_active_panel(drill_panel);
+                            if (!inv->open) { inv->open = true; inv->open_window(); }
+                            return;
+                        }
+                        if (!inv->open && obj.opens_inv) { inv->open = true; inv->open_window(); }
+                    };
+                    inv->pick(item_stack(Item::IRON_PLATE, 32));
+                    inv->pick(item_stack(Item::COAL, 32));
+                    inv->pick(item_stack(Item::STONE, 32));
+                    inv->pick(item_stack(Item::CONVEYOR, 64));
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Step 3: Inventory setup.");
+                    break;
+                case 4:
+                    setup_other_ui();
+                    world.update(initial_player_tile_x, initial_player_tile_y, config.chunk_distance);
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Step 4: UI and World updated.");
+                    break;
+                case 5:
+                    main_window = setup_menu_window();
+                    state = GameState::Menu;
+                    Logger::Log("APPLICATION", Logger::Level::Info, "Loading complete.");
+                    break;
+            }
+            loading_step++;
+        }
+
         Uint64 current_counter = SDL_GetPerformanceCounter();
         delta_time = (float)(current_counter - last_counter) / frequency;
         last_counter = current_counter;
@@ -559,6 +564,8 @@ int main() {
             if (e.type == SDL_EVENT_QUIT) {
                 running = false;
             }
+
+            if (state == GameState::Loading) continue;
 
             bool gui_consumed = gui_engine.HandleEvent(e);
             main_window = gui_engine.GetWindow();
@@ -676,24 +683,30 @@ int main() {
             if (!gui_consumed) {
                 if (state == GameState::Playing) {
                     player.handle_input(e);
+
+                    if (e.type == SDL_EVENT_KEY_DOWN && KeyBindMatches(config.input.drop_item, e.key.key) && inv) {
+                        float mw_x = cam.x + mouse_x / cam.zoom;
+                        float mw_y = cam.y + mouse_y / cam.zoom;
+                        player.handle_drop(*inv, mw_x, mw_y);
+                    }
                 }
             }
 
-            inv.handle_event(e);
+            if (inv) inv->handle_event(e);
             if (state == GameState::Playing) {
-                player.handle_item_placement(e, cam, inv, world, !gui_consumed);
+                if (inv) player.handle_item_placement(e, cam, *inv, world, !gui_consumed);
             }
         }
 
         if (state == GameState::Playing) {
-            player.update(inv, cam, delta_time, mouse_x, mouse_y);
+            player.update(*inv, cam, delta_time, mouse_x, mouse_y);
 
             int player_tile_x = (int)player.player.x / TILE_SIZE;
             int player_tile_y = (int)player.player.y / TILE_SIZE;
 
             std::size_t chunk_count_before = world.get_chunks().size();
             world.update(player_tile_x, player_tile_y, config.chunk_distance);
-            player.update_placed_drills(delta_time, world, inv, tex);
+            player.update_placed_drills(delta_time, world, *inv, tex);
             std::size_t chunk_count_after = world.get_chunks().size();
             if (chunk_count_after != chunk_count_before) {
                 Logger::Log("SYSTEM", Logger::Level::Debug,
@@ -702,7 +715,8 @@ int main() {
                             player_tile_x / CHUNK_SIZE, player_tile_y / CHUNK_SIZE);
             }
             cam.update(player.player, win_w * 0.5f, win_h * 0.5f);
-            player.update_mining(delta_time, world, inv, tex);
+            player.update_mining(delta_time, world, *inv, tex);
+            player.update_conveyors(drop_system, delta_time);
         } else if (state == GameState::Menu) {
             menu_cam_timer += delta_time;
             cam.x = menu_origin_x + std::sin(menu_cam_timer * 0.4f) * 250.0f;
@@ -712,10 +726,12 @@ int main() {
             world.update((int)cam.x / TILE_SIZE, (int)cam.y / TILE_SIZE, config.chunk_distance);
         }
 
-        furnace_panel->update(delta_time);
-        drill_panel->update(delta_time);
-        crafting->update(delta_time, inv);
-        inv.update(mouse_x, mouse_y);
+        if (state != GameState::Loading) {
+            if (furnace_panel) furnace_panel->update(delta_time);
+            if (drill_panel) drill_panel->update(delta_time);
+            if (crafting && inv) crafting->update(delta_time, *inv);
+            if (inv) inv->update(mouse_x, mouse_y);
+        }
 
         const float view_left_world = cam.x;
         const float view_top_world = cam.y;
@@ -745,7 +761,7 @@ int main() {
         if (!(mouse_buttons & SDL_BUTTON_RMASK)) {
             player.stop_mining();
             right_hold_blocked = false;
-        } else if (!right_hold_blocked && inv.open == false) {
+        } else if (!right_hold_blocked && inv && inv->open == false) {
             if (!player.is_mining() && (hovered_tile_data.type == STONE || hovered_tile_data.type == IRON_ORE)) {
                 player.start_mining(hovered_tile.x, hovered_tile.y, hovered_tile_data.type);
             }
@@ -757,6 +773,22 @@ int main() {
             SDL_SetRenderDrawColor(renderer, 24, 26, 31, 255);
         }
         SDL_RenderClear(renderer);
+
+        if (state == GameState::Loading) {
+            float progress = (float)loading_step / (float)TOTAL_LOADING_STEPS;
+            float bar_w = 400.0f;
+            float bar_h = 24.0f;
+            float x = (win_w - bar_w) * 0.5f;
+            float y = (win_h - bar_h) * 0.5f;
+            
+            SDL_SetRenderDrawColor(renderer, 30, 33, 39, 255);
+            SDL_FRect bg_rect = { x, y, bar_w, bar_h };
+            SDL_RenderFillRect(renderer, &bg_rect);
+            
+            SDL_SetRenderDrawColor(renderer, 216, 176, 80, 255);
+            SDL_FRect fill_rect = { x + 2, y + 2, (bar_w - 4) * progress, bar_h - 4 };
+            SDL_RenderFillRect(renderer, &fill_rect);
+        }
 
         if (state == GameState::Playing || state == GameState::Menu) {
             for (auto& [key, chunk] : world.get_chunks()) {
@@ -819,7 +851,7 @@ int main() {
             player.render_placed_objects(renderer, cam, visible_min_tile_x, visible_min_tile_y, visible_max_tile_x, visible_max_tile_y);
             drop_system.render(renderer, cam);
             player.render(renderer, cam);
-            player.draw_item_placement_preview(renderer, cam, inv, world, mouse_x, mouse_y);
+            if (inv) player.draw_item_placement_preview(renderer, cam, *inv, world, mouse_x, mouse_y);
         }
 
         if (state == GameState::Menu) {
@@ -862,7 +894,7 @@ int main() {
         gui_engine.RenderAll();
 
         if (state == GameState::Playing) {
-            inv.draw(renderer, game_font.get());
+            if (inv) inv->draw(renderer, game_font.get());
             player.draw_mining_progress_bar(renderer, win_w, win_h);
         }
 
