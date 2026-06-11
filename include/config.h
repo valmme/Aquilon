@@ -21,6 +21,7 @@ struct InputConfig {
     KeyBind zoom_in;
     KeyBind zoom_out;
     KeyBind drop_item;
+    KeyBind pick_item;
     KeyBind rotate_placement;
 };
 
@@ -43,6 +44,7 @@ struct AppConfig {
         input.zoom_in.keys = { SDLK_EQUALS, SDLK_KP_PLUS };
         input.zoom_out.keys = { SDLK_MINUS, SDLK_KP_MINUS };
         input.drop_item.keys = { SDLK_Z };
+        input.pick_item.keys = { SDLK_F };
         input.rotate_placement.keys = { SDLK_R };
         return input;
     }();

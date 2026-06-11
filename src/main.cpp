@@ -689,6 +689,10 @@ int main() {
                         float mw_y = cam.y + mouse_y / cam.zoom;
                         player.handle_drop(*inv, mw_x, mw_y);
                     }
+
+                    if (e.type == SDL_EVENT_KEY_DOWN && KeyBindMatches(config.input.pick_item, e.key.key) && inv) {
+                        player.handle_pickup(*inv);
+                    }
                 }
             }
 

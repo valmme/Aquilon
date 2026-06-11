@@ -2,7 +2,7 @@
 #define AQUILON_VERSION_H
 
 #define GAME_VERSION "0.1.0"
-#define BUILD_NUMBER "122.d20d10a"
-#define BUILD_DATE "2026-06-09 16:08:26"
+#define BUILD_NUMBER "124.c660e1c"
+#define BUILD_DATE "2026-06-11 18:39:22"
 
 #endif // AQUILON_VERSION_H

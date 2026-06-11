@@ -48,6 +48,17 @@ void Player::handle_drop(Inventory& inv, float mw_x, float mw_y) {
     inv.consume_cursor_item_one();
 }
 
+void Player::handle_pickup(Inventory& inv) {
+    if (!drop_system) return;
+
+    float cx = player.x + player.w * 0.5f;
+    float cy = player.y + player.h * 0.5f;
+
+    for (Item* i : drop_system->pickup_near(cx, cy, PICKUP_RADIUS)) {
+        inv.pick(i);
+    }
+}
+
 bool Player::can_place_at(const std::vector<PlacedObject>& placed_objects, int x, int y, vec2 size) {
     for (const PlacedObject& obj : placed_objects) {
         int ax1 = obj.x;

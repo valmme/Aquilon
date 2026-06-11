@@ -164,6 +164,7 @@ std::string AppConfigToText(const AppConfig& config) {
     WriteKeyBind(out, "zoom_in", config.input.zoom_in);
     WriteKeyBind(out, "zoom_out", config.input.zoom_out);
     WriteKeyBind(out, "drop_item", config.input.drop_item);
+    WriteKeyBind(out, "pick_item", config.input.pick_item);
     WriteKeyBind(out, "rotate_placement", config.input.rotate_placement);
     return out.str();
 }
@@ -183,6 +184,7 @@ bool WriteDefaultConfig(const std::string& path) {
     defaults.input.zoom_in.keys = { SDLK_EQUALS, SDLK_KP_PLUS };
     defaults.input.zoom_out.keys = { SDLK_MINUS, SDLK_KP_MINUS };
     defaults.input.drop_item.keys = { SDLK_Z };
+    defaults.input.pick_item.keys = { SDLK_F };
     defaults.input.rotate_placement.keys = { SDLK_R };
 
     std::ofstream file(path, std::ios::trunc);
@@ -401,6 +403,15 @@ bool LoadAppConfig(const std::string& path, AppConfig& config) {
 
         if (key == "drop_item") {
             if (!ParseKeyBindValue(value, config.input.drop_item)) {
+                Logger::Log("SYSTEM", Logger::Level::Warn,
+                            "Unknown key bind '%s' at line %d in '%s'.",
+                            value.c_str(), line_number, path.c_str());
+            }
+            continue;
+        }
+
+        if (key == "pick_item") {
+            if (!ParseKeyBindValue(value, config.input.pick_item)) {
                 Logger::Log("SYSTEM", Logger::Level::Warn,
                             "Unknown key bind '%s' at line %d in '%s'.",
                             value.c_str(), line_number, path.c_str());

@@ -11,6 +11,7 @@
 #include <functional>
 
 #define DROP_INTERVAL 0.1f
+#define PICKUP_RADIUS 42
 
 class World;
 class Inventory;
